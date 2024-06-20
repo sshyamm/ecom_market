@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% load static %}
+{% load bootstrap4 %}
+{% load custom_filters %}
+{% block content %}
+<div class="container-fluid page-header py-5">
+    <h1 class="text-center text-white display-6">Dashboard</h1>
+    <ol class="breadcrumb justify-content-center mb-0">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+    </ol>
+</div>
+<div class="container-fluid py-5">
+    <h1 class="text-center mb-4">Manage Items for {{ category.category_name }}</h1>
+    <div class="row justify-content-center">
+        <div class="table-responsive">
+            <table id="order-table" class="table text-center align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th onclick="sortTable(1)" style="cursor: pointer;">Purpose <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(2)" style="cursor: pointer;">Item <span class="bi bi-sort-up"></span></th>
+                        <th>Root Image</th>
+                        <th onclick="sortTable(3)" style="cursor: pointer;">Description <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(4)" style="cursor: pointer;">Year <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(5)" style="cursor: pointer;">Country <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(6)" style="cursor: pointer;">Material <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(7)" style="cursor: pointer;">Weight <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(8)" style="cursor: pointer;">Rate <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(9)" style="cursor: pointer;">Status <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(10)" style="cursor: pointer;">Featured Item <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(11)" style="cursor: pointer;">Is Deleted <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(12)" style="cursor: pointer;">User <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(13)" style="cursor: pointer;">Starting bid <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(14)" style="cursor: pointer;">End time <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(15)" style="cursor: pointer;">Owner Profit Amount <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(16)" style="cursor: pointer;">Incremental Value <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(17)" style="cursor: pointer;">Highest Bidder <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(18)" style="cursor: pointer;">Highest bid <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(19)" style="cursor: pointer;">Auto Bidder <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(20)" style="cursor: pointer;">Auto bid amount <span class="bi bi-sort-up"></span></th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="order-table-body" style="background: linear-gradient(90deg, rgb(255, 255, 255), #c7e61b); font-weight: bold;" class="text-dark">
+                    {% for item, root_image in items_with_images %}
+                    <tr>
+                        <td>{{ item.purpose }}</td>
+                        <td><a href="{% url 'dynamic_update' 'item' item.pk %}?category_id={{ category.pk }}" class="text-blue">{{ item.item_name }}</a></td>
+                        <td>
+                            {% if root_image %}
+                                <img src="{{ root_image.image.url }}" alt="{{ item.item_name }}" style="max-width: 100px;">
+                            {% else %}
+                                <img src="{% static 'img/default.jpg' %}" alt="Default Image" style="max-width: 100px;">
+                            {% endif %}
+                        </td>
+                        <td>{{ item.item_desc }}</td>
+                        <td>{{ item.item_year }}</td>
+                        <td>{{ item.item_country }}</td>
+                        <td>{{ item.item_material }}</td>
+                        <td>{{ item.item_weight }}</td>
+                        <td>{{ item.rate }}</td>
+                        <td>{{ item.item_status }}</td>
+                        <td>{{ item.featured_item }}</td>
+                        <td>{{ item.is_deleted }}</td>
+                        <td>{{ item.user.first }}</td>
+                        <td>{{ item.starting_bid }}</td>
+                        <td>{{ item.end_time }}</td>
+                        <td>{{ item.owner_profit_amount }}</td>
+                        <td>{{ item.incremental_value }}</td>
+                        <td>{{ item.highest_bidder.first }}</td>
+                        <td>{{ item.highest_bid }}</td>
+                        <td>{{ item.auto_bidder.first }}</td>
+                        <td>{{ item.auto_bid_amount }}</td>
+                        <td>
+                            <span class="badge bg-white text-white">
+                            <!-- Edit and Delete actions for Item Images -->
+                            <a href="{% url 'manage_item_images' item_id=item.id %}?category_id={{ category.pk }}" class="text-blue me-2" title="Manage Images">
+                                <span class="fas fa-images fa-lg"></span>
+                            </a>
+                            <a href="{% url 'dynamic_update' 'item' item.pk %}?category_id={{ category.pk }}" class="text-primary me-2" title="Edit">
+                                <span class="fas fa-edit fa-lg"></span>
+                            </a>
+                            <a href="{% url 'dynamic_delete' 'item' item.pk %}?category_id={{ category.pk }}" class="text-danger me-2" title="Delete">
+                                <span class="fas fa-trash fa-lg"></span>
+                            </a>
+                            <a href="{% url 'manage_bids' item.pk %}?category_id={{ category.pk }}" class="text-info me-2" title="Manage Bids">
+                                <span class="fas fa-gavel fa-lg"></span>
+                            </a>
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="14">No Items found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <span>&nbsp;</span>
+        <div class="text-center">
+            <a href="{% url 'dynamic_create' 'item' %}?category_id={{ category.pk }}" class="btn btn-success">Add Item</a>
+            <a href="{% url 'dynamic_list' 'category' %}" class="btn btn-danger">Back to Category</a>
+        </div>
+        <div class="col-12">
+            <div class="pagination d-flex justify-content-center mt-5" id="pagination">
+                <!-- Pagination buttons will be injected by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+        const rows = document.querySelectorAll('#order-table-body tr');
+        const rowsPerPage = 10;
+        const paginationContainer = document.getElementById('pagination');
+        let currentPage = 1;
+    
+        function displayRows(page) {
+            const start = (page - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            rows.forEach((row, index) => {
+                row.style.display = (index >= start && index < end) ? '' : 'none';
+            });
+        }
+    
+        function setupPagination() {
+            const pageCount = Math.ceil(rows.length / rowsPerPage);
+            paginationContainer.innerHTML = '';
+    
+            // Previous button
+            const prevButton = document.createElement('a');
+            prevButton.href = '#';
+            prevButton.innerHTML = '&laquo;';
+            prevButton.className = 'rounded';
+            if (currentPage === 1) {
+                prevButton.classList.add('disabled');
+            }
+            prevButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                if (currentPage > 1) {
+                    currentPage--;
+                    displayRows(currentPage);
+                    setupPagination();
+                }
+            });
+            paginationContainer.appendChild(prevButton);
+    
+            // Page number buttons
+            for (let i = 1; i <= pageCount; i++) {
+                const pageButton = document.createElement('a');
+                pageButton.href = '#';
+                pageButton.textContent = i;
+                pageButton.className = 'rounded';
+                if (i === currentPage) {
+                    pageButton.classList.add('active');
+                }
+                pageButton.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    currentPage = i;
+                    displayRows(currentPage);
+                    setupPagination();
+                });
+                paginationContainer.appendChild(pageButton);
+            }
+    
+            // Next button
+            const nextButton = document.createElement('a');
+            nextButton.href = '#';
+            nextButton.innerHTML = '&raquo;';
+            nextButton.className = 'rounded';
+            if (currentPage === pageCount) {
+                nextButton.classList.add('disabled');
+            }
+            nextButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                if (currentPage < pageCount) {
+                    currentPage++;
+                    displayRows(currentPage);
+                    setupPagination();
+                }
+            });
+            paginationContainer.appendChild(nextButton);
+        }
+    
+        displayRows(currentPage);
+        setupPagination();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load static %}
+{% load bootstrap4 %}
+{% block content %}
+<div class="container-fluid page-header py-5">
+    <h1 class="text-center text-white display-6">My Orders</h1>
+    <ol class="breadcrumb justify-content-center mb-0">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+        <li class="breadcrumb-item active text-white">My Orders</li>
+    </ol>
+</div>
+<div class="container py-5">
+    {% if orders %}
+    <div class="row">
+        {% for order in orders %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Order #{{ order.id }} - {{ order.invoice_no }}</h5>
+                    <p class="card-text">Order Date: {{ order.order_date }}</p>
+                    <p class="card-text text-blue" style="font-weight: bold;">Total Amount: {{ order.discounted_total_amount }}/-</p>
+                    <p class="card-text">Shipment Status: {{ order.status }}</p>
+                    <a href="{% url 'order_detail' order.id %}" class="btn btn-primary btn-sm">View Details</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-danger text-center" role="alert">
+        <strong>You have no orders yet</strong>
+    </div>
+    {% endif %}
+</div>
+{% endblock content %}

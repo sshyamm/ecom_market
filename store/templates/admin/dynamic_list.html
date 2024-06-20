@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+{% load static %}
+{% load bootstrap4 %}
+{% load custom_filters %}
+{% block content %}
+<div class="container-fluid page-header py-5">
+    <h1 class="text-center text-white display-6">Dashboard</h1>
+    <ol class="breadcrumb justify-content-center mb-0">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+        <li class="breadcrumb-item active text-white">{{ table_name|title }}</li>
+    </ol>
+</div>
+<div class="container-fluid py-5">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <h1 class="text-center mb-4" style="margin-top: 20px;"><strong>{{ table_name|title }} List</strong>{% if table_name == 'order' %}
+                <a href="{% url 'order_history_users' %}" class="btn btn-secondary">Search & export</a>
+                {% endif %}</h1>
+            <div class="table-responsive">
+                <table id="order-table" class="table text-center align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            {% for field in fields %}
+                            <th onclick="sortTable({{ forloop.counter0 }})" style="cursor: pointer;">{{ field.verbose_name|title }} <span id="sort-icon-{{ forloop.counter0 }}" class="bi bi-sort-up"></span></th>
+                            {% endfor %}
+                            {% if table_name == 'order' %}
+                            <th onclick="sortTable({{ 7 }})" style="cursor: pointer;">Total Amount <span id="sort-icon-total" class="bi bi-sort-up"></span></th>
+                            {% endif %}
+                            {% if table_name == 'item' %}
+                            <th>Root Image</th>
+                            {% endif %}
+                            <th>Action</th>
+                        </tr>
+                        
+                    </thead>
+                    <tbody id="order-table-body" style="background: linear-gradient(90deg, rgb(255, 255, 255), #c7e61b); font-weight: bold;" class="text-dark">
+                        {% for obj in objects %}
+                        <tr>
+                            {% for field in fields %}
+                            {% if field.name == 'image' %}
+                            {% if obj.image %}
+                            <td><img src="{{ obj.image.url }}" alt="Item Image" style="max-width: 100px;"></td>
+                            {% else %}
+                            <td>No image</td>
+                            {% endif %}
+                            {% elif field.name == 'user' %}
+                            {% if obj.user %}
+                            <td>
+                                {% for user in obj.user.all %}
+                                {{ user.username }}
+                                {% endfor %}
+                            </td>
+                            {% else %}
+                            <td>None</td>
+                            {% endif %}
+                            {% elif field.name == 'owner' %}
+                            {% if obj.owner %}
+                            <td>
+                                {% for user in obj.owner.all %}
+                                {{ user.username }}
+                                {% endfor %}
+                            </td>
+                            {% else %}
+                            <td>None</td>
+                            {% endif %}
+                            {% elif field.name == 'highest_bidder' %}
+                            {% if obj.highest_bidder %}
+                            <td>
+                                {% for user in obj.highest_bidder.all %}
+                                {{ user.username }}
+                                {% endfor %}
+                            </td>
+                            {% else %}
+                            <td>None</td>
+                            {% endif %}
+                            {% elif field.name == 'auto_bidder' %}
+                            {% if obj.auto_bidder %}
+                            <td>
+                                {% for user in obj.auto_bidder.all %}
+                                {{ user.username }}
+                                {% endfor %}
+                            </td>
+                            {% else %}
+                            <td>None</td>
+                            {% endif %}
+                            {% elif field.name == 'category' %}
+                            {% if obj.category %}
+                            <td>
+                                {% for category in obj.category.all %}
+                                {{ category.category_name }}
+                                {% endfor %}
+                            </td>
+                            {% else %}
+                            <td>None</td>
+                            {% endif %}
+                            {% elif field.name == 'item' %}
+                            {% if obj.item %}
+                            <td>
+                                {% for item in obj.item.all %}
+                                {{ item.item_name }}
+                                {% endfor %}
+                            </td>
+                            {% else %}
+                            <td>None</td>
+                            {% endif %}
+                            {% elif field.name == 'cart_item' %}
+                            {% if obj.cart_item %}
+                            <td>
+                                {% for cart in obj.cart_item.all %}
+                                {{ cart.item.first }}
+                                {% endfor %}
+                            </td>
+                            {% else %}
+                            <td>None</td>
+                            {% endif %}
+                            {% elif field.name == 'order' %}
+                            {% if obj.order %}
+                            <td>
+                                {% for order in obj.order.all %}
+                                {{ order.invoice_no }}
+                                {% endfor %}
+                            </td>
+                            {% else %}
+                            <td>None</td>
+                            {% endif %}
+                            {% elif field.name == 'offer' %}
+                            {% if obj.offer %}
+                            <td>
+                                {% for offer in obj.offer.all %}
+                                {{ offer.name }}
+                                {% endfor %}
+                            </td>
+                            {% else %}
+                            <td>None</td>
+                            {% endif %}
+                            {% elif field.name == 'shippingaddress' %}
+                            {% if obj.shippingaddress %}
+                            <td>
+                                {% for shippingaddress in obj.shippingaddress.all %}
+                                {{ shippingaddress.address }}, {{ shippingaddress.city }}, {{ shippingaddress.state }}, {{ shippingaddress.postal_code }}
+                                {% endfor %}
+                            </td>
+                            {% else %}
+                            <td>None</td>
+                            {% endif %}
+                            {% else %}
+                            <td>{{ obj|get_attribute:field.name }}</td>
+                            {% endif %}
+                            {% endfor %}
+                            {% if table_name == 'order' %}
+                            <td>{{ obj.calculate_discounted_total_amount }}</td>
+                            {% endif %}
+                            {% if table_name == 'item' %}
+                            <td>
+                                {% for item, root_image in items_with_images %}
+                                {% if item.id == obj.id %}
+                                {% if root_image %}
+                                <img src="{{ root_image.image.url }}" alt="Root Image" style="max-width: 100px;">
+                                {% else %}
+                                <img src="{% static 'img/default.jpg' %}" alt="Default Image" style="max-width: 100px;">
+                                {% endif %}
+                                {% endif %}
+                                {% endfor %}
+                            </td>
+                            {% endif %}
+                            <td>
+                                <span class="badge bg-white text-white">
+                                    {% if table_name == 'order' %}
+                                    <a href="{% url 'order_detail' order_id=obj.id %}" class="text-secondary me-2" title="View Details">
+                                        <span class="fas fa-eye fa-lg"></span>
+                                    </a>
+                                    <a href="{% url 'manage_order_items' order_id=obj.id %}" class="text-info me-2" title="Manage Orders">
+                                        <span class="fas fa-cogs fa-lg"></span>
+                                    </a>
+                                    {% endif %}
+                                    <a href="{% url 'dynamic_update' table_name=model_name pk=obj.pk %}" class="text-primary me-2" title="Edit">
+                                        <span class="fas fa-edit fa-lg"></span>
+                                    </a>
+                                    <a href="{% url 'dynamic_delete' table_name=model_name pk=obj.pk %}" class="text-danger me-2" title="Delete">
+                                        <span class="fas fa-trash-alt fa-lg"></span>
+                                    </a>
+                                    {% if table_name == 'item' %}
+                                    <a href="{% url 'manage_item_images' item_id=obj.id %}" class="text-info me-2" title="Manage Images">
+                                        <span class="fas fa-images fa-lg"></span>
+                                    </a>
+                                    {% endif %}
+                                    {% if table_name == 'category' %}
+                                    <a href="{% url 'manage_category_items' category_id=obj.id %}" class="text-info me-2" title="Manage Category">
+                                        <span class="fas fa-cogs fa-lg"></span>
+                                    </a>
+                                    {% endif %}
+                                    {% if table_name == 'auction' %}
+                                    <a href="{% url 'manage_bids' auction_id=obj.id %}" class="text-info me-2" title="Manage Bids">
+                                        <span class="fas fa-gavel fa-lg"></span>
+                                    </a>
+                                    {% endif %}
+                                </span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="{{ fields_length|add:1 }}">No items found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    
+                </table>
+            </div>
+        </div>
+        <div class="text-center">
+            <a href="{% url 'dynamic_create' table_name %}" class="btn btn-success">Add {{ table_name|title }}</a>
+            <a href="{% url 'dashboard' %}" class="btn btn-danger">Back</a>
+        </div>
+        <div class="col-12">
+            <div class="pagination d-flex justify-content-center mt-5" id="pagination">
+                <!-- Pagination buttons will be injected by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+        const rows = document.querySelectorAll('#order-table-body tr');
+        const rowsPerPage = 10;
+        const paginationContainer = document.getElementById('pagination');
+        let currentPage = 1;
+    
+        function displayRows(page) {
+            const start = (page - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            rows.forEach((row, index) => {
+                row.style.display = (index >= start && index < end) ? '' : 'none';
+            });
+        }
+    
+        function setupPagination() {
+            const pageCount = Math.ceil(rows.length / rowsPerPage);
+            paginationContainer.innerHTML = '';
+    
+            // Previous button
+            const prevButton = document.createElement('a');
+            prevButton.href = '#';
+            prevButton.innerHTML = '&laquo;';
+            prevButton.className = 'rounded';
+            if (currentPage === 1) {
+                prevButton.classList.add('disabled');
+            }
+            prevButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                if (currentPage > 1) {
+                    currentPage--;
+                    displayRows(currentPage);
+                    setupPagination();
+                }
+            });
+            paginationContainer.appendChild(prevButton);
+    
+            // Page number buttons
+            for (let i = 1; i <= pageCount; i++) {
+                const pageButton = document.createElement('a');
+                pageButton.href = '#';
+                pageButton.textContent = i;
+                pageButton.className = 'rounded';
+                if (i === currentPage) {
+                    pageButton.classList.add('active');
+                }
+                pageButton.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    currentPage = i;
+                    displayRows(currentPage);
+                    setupPagination();
+                });
+                paginationContainer.appendChild(pageButton);
+            }
+    
+            // Next button
+            const nextButton = document.createElement('a');
+            nextButton.href = '#';
+            nextButton.innerHTML = '&raquo;';
+            nextButton.className = 'rounded';
+            if (currentPage === pageCount) {
+                nextButton.classList.add('disabled');
+            }
+            nextButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                if (currentPage < pageCount) {
+                    currentPage++;
+                    displayRows(currentPage);
+                    setupPagination();
+                }
+            });
+            paginationContainer.appendChild(nextButton);
+        }
+    
+        displayRows(currentPage);
+        setupPagination();
+    });
+</script>
+{% endblock content %}

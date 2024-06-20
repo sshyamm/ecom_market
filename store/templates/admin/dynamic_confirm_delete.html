@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load static %}
+{% load bootstrap4 %}
+{% load custom_filters %}
+{% block content %}
+<div class="container-fluid page-header py-5">
+    <h1 class="text-center text-white display-6">Dashboard</h1>
+    <ol class="breadcrumb justify-content-center mb-0">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+        <li class="breadcrumb-item active text-white">Dashboard</li>
+    </ol>
+</div>
+<div class="container-fluid py-5">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card mt-5">
+                    <div class="card-body">
+                        <h1>Delete {{ table_name|title }}</h1>
+                        <p class="lead">Are you sure you want to delete this {{ table_name|title }}?</p>
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="btn-group" role="group" aria-label="Delete actions">
+                                <button type="submit" class="btn btn-danger">Confirm Delete</button>
+                                {% if table_name == 'itemimage' %}
+                                <a href="{% url 'manage_item_images' item.pk %}?category_id={{ category.pk }}" class="btn btn-secondary">Cancel</a>
+                                {% elif table_name == 'orderitem' %}
+                                <a href="{% url 'manage_order_items' order.pk %}" class="btn btn-secondary">Cancel</a>
+                                {% elif table_name == 'bid' %}
+                                <a href="{% url 'manage_bids' item.pk %}?category_id={{ category.pk }}" class="btn btn-secondary">Cancel</a>
+                                {% elif table_name == 'item' %}
+                                <a href="{% url 'manage_category_items' category.pk %}" class="btn btn-secondary">Cancel</a>
+                                {% else %}
+                                <a href="{% url 'dynamic_list' table_name %}" class="btn btn-secondary">Cancel</a>
+                                {% endif %}
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

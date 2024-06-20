@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load bootstrap4 %}
+
+{% block content %}
+<div class="container-fluid page-header py-5">
+    <h1 class="text-center text-white display-6">Auctions</h1>
+    <ol class="breadcrumb justify-content-center mb-0">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+        <li class="breadcrumb-item active"><a href="{% url 'auctions' %}">Auctions</a></li>
+        <li class="breadcrumb-item active text-white">{{ item.item_name }}</li>
+    </ol>
+</div>
+
+<div class="container-fluid py-5 mt-5">
+    <div class="container py-5">
+        <div class="row g-4 mb-5">
+            <div class="col-lg-12 col-xl-12">
+                {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-dismissible fade show mt-3 {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'success' %}alert-success{% endif %} text-center" role="alert">
+                        <strong>{{ message }}</strong>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+                {% endif %}
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <div class="border rounded">
+                            <a href="#">
+                                {% if root_image %}
+                                    <img src="{{ root_image.image.url }}" class="img-fluid rounded" style="width: 100%;" alt="{{ item.item_name }}">
+                                {% else %}
+                                    <img src="{% static 'img/default.jpg' %}" class="img-fluid rounded" style="width: 100%;" alt="{{ item.item_name }}">
+                                {% endif %}
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <h4 class="fw-bold mb-3">{{ item.item_name }}</h4>
+                        <h5 class="fw-bold mb-3">{{ item.item_desc }}</h5>
+                        <p><strong>Status:</strong> 
+                            {% if current_time < item.end_time %}
+                                <span class="badge bg-success">ONGOING</span>
+                            {% else %}
+                                <span class="badge bg-danger">Ended on {{ item.end_time }}</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>End Time:</strong> {{ item.end_time }}</p>
+                        {% if current_time < item.end_time %}
+                            <h5 class="fw-bold mb-3">Starting Bid : {{ item.starting_bid }}/-</h5>
+                        {% endif %}                       
+                        <!-- Bidding Form -->
+                        {% if current_time < item.end_time %}
+                            <form method="POST" action="{% url 'place_bid' item_id=item.id %}">
+                                {% csrf_token %}
+                                <div class="mb-3">
+                                    <label for="bid_amount" class="form-label">Enter Your Bid 
+                                        {% if show_danger_text %}
+                                        <span class="text-danger">(Your bid amount must exceed the current highest bid by {{ item.incremental_value }}/-)</span>
+                                        {% endif %}
+                                    </label>
+                                    {% for field in bid_form.visible_fields %}
+                                        {% if field.name == 'bid_amount' %}
+                                            {% bootstrap_field field show_label=False %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-gavel"></i> Place Bid
+                                </button>
+                                <button type="button" class="btn btn-secondary" id="toggleAutoBidForm">
+                                    <i class="fas fa-robot"></i> Auto Bid <i class="fas fa-chevron-down"></i>
+                                </button>
+                                <button type="button" class="btn btn-info" id="checkMasterBidderBtn">
+                                    <i class="fas fa-crown"></i> Check Master Bidder
+                                </button>               
+                            </form>
+                            <div id="autoBidForm" class="mt-3" style="overflow: hidden; transition: max-height 0.2s ease-out; max-height: 0;">
+                                <form method="POST" action="{% url 'place_auto_bid' item_id=item.id %}">
+                                    {% csrf_token %}
+                                    <div class="mb-3">
+                                        <label for="bid_amount" class="form-label">Enter Your Bid 
+                                            <span class="text-danger">(Your auto bid amount must exceed the current highest bid)</span>
+                                        </label>
+                                        {% for field in auto_bid_form.visible_fields %}
+                                        {% if field.name == 'auto_bid_amount' %}
+                                            {% bootstrap_field field show_label=False %}
+                                        {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-gavel"></i> Place Auto Bid
+                                    </button>
+                                </form>
+                                <span>&nbsp;</span>
+                            </div>
+                            <h4 class="fw-bold mb-3 text-blue">
+                                <strong>Current Highest Bid:</strong> 
+                                {% if item.highest_bid %}
+                                    {% if request.user in item.highest_bidder.all %}
+                                        {{ item.highest_bid }}/-
+                                    {% else %}
+                                        {{ latest_bid.bid_amount }}/-
+                                    {% endif %}
+                                {% else %}
+                                    {{ item.starting_bid }}/-
+                                {% endif %}
+                            </h4>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% if item_images %}
+        <div class="container-fluid vesitable py-5">
+            <h1 class="mb-0">More Images</h1>
+            <div class="owl-carousel vegetable-carousel justify-content-center">
+                {% for image in item_images %}
+                    <div class="rounded position-relative vesitable-item">
+                        <div class="vesitable-img">
+                            <img src="{{ image.image.url }}" class="img-fluid w-100 rounded-top" alt="{{ item.item_name }}">
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Bootstrap Modal for Alert Messages -->
+<div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="alertModalLabel">Alert</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="alertModalBody">
+                <!-- Alert message will be inserted here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const toggleAutoBidForm = document.getElementById('toggleAutoBidForm');
+        const autoBidForm = document.getElementById('autoBidForm');
+        const checkMasterBidderBtn = document.getElementById('checkMasterBidderBtn');
+        const alertModal = new bootstrap.Modal(document.getElementById('alertModal')); // Initialize Bootstrap modal
+        const alertModalBody = document.getElementById('alertModalBody');
+
+        let autoBidFormExpanded = false;
+        const maxHeight = autoBidForm.scrollHeight + "px";
+        autoBidForm.style.maxHeight = "0";
+
+        toggleAutoBidForm.addEventListener('click', function() {
+            autoBidFormExpanded = !autoBidFormExpanded;
+            if (autoBidFormExpanded) {
+                autoBidForm.style.maxHeight = maxHeight;
+            } else {
+                autoBidForm.style.maxHeight = "0";
+            }
+        });
+
+        checkMasterBidderBtn.addEventListener('click', function() {
+            fetch("{% url 'check_master_bidder' item_id=item.id %}", {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const alertClass = data.status === 'success' ? 'alert-success' : 'alert-danger';
+                const message = `<div class="alert fade show ${alertClass} text-center" role="alert">
+                                    <strong>${data.message}</strong>
+                                </div>`;
+                alertModalBody.innerHTML = message;
+                alertModal.show(); // Show the Bootstrap modal
+            })
+            .catch(error => {
+                console.error('Error fetching data:', error);
+            });
+        });
+    });
+</script>
+{% endblock %}

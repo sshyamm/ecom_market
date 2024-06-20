@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% load static %}
+{% load bootstrap4 %}
+{% block content %}
+<div class="container-fluid page-header py-5">
+    <h1 class="text-center text-white display-6">Order Detail - Invoice</h1>
+    <ol class="breadcrumb justify-content-center mb-0">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'my_orders' %}">My Orders</a></li>
+        <li class="breadcrumb-item active text-white">Order Detail</li>
+    </ol>
+</div>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div style="box-shadow: 0 20px 27px 0 rgb(0 0 0 / 50%);position: relative;display: flex;flex-direction: column;min-width: 0;word-wrap: break-word;background-color: #fff;background-clip: border-box;border: 0 solid rgba(0,0,0,.125);border-radius: 1rem;" class="card">
+                <div class="card-body">
+                    <div class="invoice-title">
+                        <h4 class="float-end font-size-15">Invoice #{{ order.invoice_no }} <span class="badge bg-success font-size-12 ms-2">{{ order.status }}</span></h4>
+                        <div class="mb-4">
+                           <h2 class="mb-1 display-6">{{ company.name }}</h2>
+                        </div>
+                        <div class="text-muted">
+                            <p class="mb-1">{{ company.address }}</p>
+                            <p class="mb-1">{{ company.city }}, {{ company.state }}</p>
+                            <p class="mb-1">{{ company.country }} - {{ company.postal_code }}</p>
+                            <p class="mb-1"><i class="uil uil-envelope-alt me-1"></i> {{ company.email }}</p>
+                            <p><i class="uil uil-phone me-1"></i> {{ company.phone_no }}</p>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <div class="text-muted">
+                                <h5 class="font-size-16 mb-3">Billed To:</h5>
+                                <h5 class="font-size-15 mb-2">{{ order.user.first }}</h5>
+                                <p class="mb-1">{{ order.shippingaddress.first.address }}</p>
+                                <p class="mb-1">{{ order.shippingaddress.first.city }}, {{ order.shippingaddress.first.state }}</p>
+                                <p class="mb-1">{{ order.shippingaddress.first.country }} - {{ order.shippingaddress.first.postal_code }}</p>
+                                <p class="mb-1">{{ order.user.first.email }}</p>
+                                <p>{{ order.shippingaddress.first.phone_no }}</p>
+                            </div>
+                        </div>
+                        <!-- end col -->
+                        <div class="col-sm-6">
+                            <div class="text-muted text-sm-end">
+                                <div>
+                                    <h5 class="font-size-15 mb-1">Invoice No:</h5>
+                                    <p>#{{ order.invoice_no }}</p>
+                                </div>
+                                <div class="mt-4">
+                                    <h5 class="font-size-15 mb-1">Invoice Date:</h5>
+                                    <p>{{ order.order_date }}</p>
+                                </div>
+                                <div class="mt-4">
+                                    <h5 class="font-size-15 mb-1">Order No:</h5>
+                                    <p>#{{ order.id }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- end col -->
+                    </div>
+                    <!-- end row -->
+                    
+                    <div class="py-2">
+                        <h5 class="font-size-15">Order Summary</h5>
+
+                        <div class="table-responsive">
+                            <table class="table align-middle table-nowrap table-centered mb-0">
+                                <thead>
+                                    <tr class="text-dark">
+                                        <th style="width: 70px;">No.</th>
+                                        <th>Item</th>
+                                        <th>Price</th>
+                                        <th>Quantity</th>
+                                        <th class="text-end" style="width: 120px;">Total</th>
+                                    </tr>
+                                </thead><!-- end thead -->
+                                <tbody>
+                                    {% for items in order_items %}
+                                    <tr class="text-dark">
+                                        <th scope="row">{{ forloop.counter }}</th>
+                                        <td>
+                                            <div>
+                                                <h5 class="text-truncate font-size-14 mb-1">{{ items.item.first }}</h5>
+                                                <p class="text-muted mb-0">{{ items.item.first.item_desc }}</p>
+                                            </div>
+                                        </td>
+                                        <td><span>&#8377;</span> {{ items.item.first.rate }}</td>
+                                        <td>{{ items.quantity }}</td>
+                                        <td class="text-end"><span>&#8377;</span> {{ items.price }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                    <!-- end tr -->
+                                    <tr>
+                                        <th scope="row" colspan="4" class="text-end">Sub Total</th>
+                                        <td class="text-end text-dark"><span>&#8377;</span> {{ order.calculate_total_amount }}</td>
+                                    </tr>
+                                    <!-- end tr -->
+                                    <tr>
+                                        <th scope="row" colspan="4" class="text-end">Shipping Charges</th>
+                                        <td class="text-end text-dark"><span>&#8377;</span> {{ shipping_address.get_shipping_charge }}</td>
+                                    </tr>
+                                    <!-- end tr -->
+                                    {% for offer in order.offer.all %}
+                                    <tr>
+                                        {% if offer.offer_type == 'UserBased' %}
+                                            <th scope="row" colspan="4" class="border-0 text-end">
+                                                OFFER - {{ offer.name }} :</th>
+                                            <td class="border-0 text-end">- {{ order.get_revised_user_based_discount_percentage }}%</td>
+                                        {% else %}    
+                                            <th scope="row" colspan="4" class="border-0 text-end">
+                                                OFFER - {{ offer.name }} :</th>
+                                            <td class="border-0 text-end">- {{ offer.discount_percentage }}%</td>
+                                        {% endif %}
+                                    </tr>
+                                    {% endfor %}
+                                    <!-- end tr -->
+                                    <tr>
+                                        <th scope="row" colspan="4" class="border-0 text-end h1 display-6 text-dark">Total :</th>
+                                        <td class="border-0 text-end"><h1 class="m-0 fw-semibold display-6 text-dark"><span>&#8377;</span>{{ order.calculate_discounted_total_amount }}</h1></td>
+                                    </tr>
+                                    <!-- end tr -->
+                                </tbody><!-- end tbody -->
+                            </table><!-- end table -->
+                        </div><!-- end table responsive -->
+                        <div class="d-print-none mt-4">
+                            <div class="float-end">
+                                <a href="{% url 'my_orders' %}" class="btn btn-primary w-md">Back to Orders</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- end col -->
+    </div>
+</div>
+{% endblock content %}

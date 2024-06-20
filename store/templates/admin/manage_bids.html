@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% load static %}
+{% load bootstrap4 %}
+{% load custom_filters %}
+{% block content %}
+<div class="container-fluid page-header py-5">
+    <h1 class="text-center text-white display-6">Dashboard</h1>
+    <ol class="breadcrumb justify-content-center mb-0">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+    </ol>
+</div>
+<div class="container-fluid py-5">
+    <div class="container py-5">
+        <h1 class="text-center mb-4">Manage Bids for {{ auction.item.first }}</h1>
+        <div class="row justify-content-center">
+            <div class="table-responsive">
+                <table id="order-table" class="table text-center align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Bidder</th>
+                            <th>Bid Amount</th>
+                            <th>Timestamp</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="order-table-body" style="background: linear-gradient(90deg, rgb(255, 255, 255), #c7e61b); font-weight: bold;" class="text-dark">
+                        {% for auctions in bids %}
+                        <tr>
+                            <td>{{ auctions.bidder.first }}</td>
+                            <td>{{ auctions.bid_amount }}</td>
+                            <td>{{ auctions.timestamp }}</td>
+                            <td>
+                                <!-- Edit and Delete actions for Item Images -->
+                                <a href="{% url 'dynamic_update' 'bid' auctions.pk %}?item_id={{ item.pk }}&category_id={{ category.pk }}" class="btn btn-primary btn-sm">Edit</a>
+                                <a href="{% url 'dynamic_delete' 'bid' auctions.pk %}?item_id={{ item.pk }}&category_id={{ category.pk }}" class="btn btn-danger btn-sm">Delete</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4">No bids found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-center">
+                <a href="{% url 'dynamic_create' 'bid' %}?item_id={{ item.pk }}&category_id={{ category.pk }}" class="btn btn-success">Add Bid</a>
+                <a href="{% url 'manage_category_items' category.pk %}" class="btn btn-danger">Back to Items</a>
+            </div>
+        </div>
+        <div class="col-12">
+            <div class="pagination d-flex justify-content-center mt-5" id="pagination">
+                <!-- Pagination buttons will be injected by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+        const rows = document.querySelectorAll('#order-table-body tr');
+        const rowsPerPage = 10;
+        const paginationContainer = document.getElementById('pagination');
+        let currentPage = 1;
+    
+        function displayRows(page) {
+            const start = (page - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            rows.forEach((row, index) => {
+                row.style.display = (index >= start && index < end) ? '' : 'none';
+            });
+        }
+    
+        function setupPagination() {
+            const pageCount = Math.ceil(rows.length / rowsPerPage);
+            paginationContainer.innerHTML = '';
+    
+            // Previous button
+            const prevButton = document.createElement('a');
+            prevButton.href = '#';
+            prevButton.innerHTML = '&laquo;';
+            prevButton.className = 'rounded';
+            if (currentPage === 1) {
+                prevButton.classList.add('disabled');
+            }
+            prevButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                if (currentPage > 1) {
+                    currentPage--;
+                    displayRows(currentPage);
+                    setupPagination();
+                }
+            });
+            paginationContainer.appendChild(prevButton);
+    
+            // Page number buttons
+            for (let i = 1; i <= pageCount; i++) {
+                const pageButton = document.createElement('a');
+                pageButton.href = '#';
+                pageButton.textContent = i;
+                pageButton.className = 'rounded';
+                if (i === currentPage) {
+                    pageButton.classList.add('active');
+                }
+                pageButton.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    currentPage = i;
+                    displayRows(currentPage);
+                    setupPagination();
+                });
+                paginationContainer.appendChild(pageButton);
+            }
+    
+            // Next button
+            const nextButton = document.createElement('a');
+            nextButton.href = '#';
+            nextButton.innerHTML = '&raquo;';
+            nextButton.className = 'rounded';
+            if (currentPage === pageCount) {
+                nextButton.classList.add('disabled');
+            }
+            nextButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                if (currentPage < pageCount) {
+                    currentPage++;
+                    displayRows(currentPage);
+                    setupPagination();
+                }
+            });
+            paginationContainer.appendChild(nextButton);
+        }
+    
+        displayRows(currentPage);
+        setupPagination();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% load static %}
+{% load bootstrap4 %}
+{% block content %}
+<div class="container-fluid page-header py-5 bg-dark">
+    <h1 class="text-center text-white display-6">Order Transactions</h1>
+    <ol class="breadcrumb justify-content-center mb-0">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+        <li class="breadcrumb-item active text-white">Order Transactions</li>
+    </ol>
+</div>
+<div class="container py-5">
+    <form method="post">
+        {% csrf_token %}
+        <div class="row mb-4">
+            <div class="col-md-6 offset-md-3">
+                <div class="input-group">
+                    <a href="{% url 'order_history' %}" class="btn btn-primary">Reset</a>
+                    <input type="date" class="form-control" id="from_date" name="from_date">
+                    <span class="input-group-text">to</span>
+                    <input type="date" class="form-control" id="to_date" name="to_date">
+                    <button type="submit" class="btn btn-primary">Filter</button>
+                </div>
+            </div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-6 offset-md-3">
+                <h3 class="font-size-16 mb-1 text-center text-blue">
+                    Search with more filters 
+                    <button class="btn btn-link p-0 text-danger" type="button" data-bs-toggle="collapse" data-bs-target="#additionalFiltersCollapse" aria-expanded="false" aria-controls="additionalFiltersCollapse">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </h3>
+                <div class="collapse" id="additionalFiltersCollapse">
+                    <div class="card" style="box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);">
+                        <div class="card-body">
+                            <div class="input-group mb-3">
+                                <input type="text" class="form-control" id="invoice_no" name="invoice_no" placeholder="Invoice Number">
+                            </div>
+                            <div class="input-group mb-3">
+                                <input type="text" class="form-control" id="city" name="city" placeholder="City">
+                                <input type="text" class="form-control" id="state" name="state" placeholder="State">
+                                <select class="form-select" id="country" name="country">
+                                    <option value="" selected>Country</option>
+                                    {% for country in countries %}
+                                        <option value="{{ country.code }}">{{ country.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="input-group mb-3">
+                                <input type="number" class="form-control" id="total_amount_min" name="total_amount_min" placeholder="Total Amount Min">
+                                <input type="number" class="form-control" id="total_amount_max" name="total_amount_max" placeholder="Total Amount Max">
+                            </div>
+                            <div class="input-group mb-3">
+                                <select class="form-select" id="status" name="status">
+                                    <option value="" selected>Status</option>
+                                    <option value="Pending">Pending</option>
+                                    <option value="Processing">Processing</option>
+                                    <option value="Shipped">Shipped</option>
+                                    <option value="Delivered">Delivered</option>
+                                    <option value="Cancelled">Cancelled</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+    {% if orders %}
+    <div class="table-responsive">
+        <table id="order-table" class="table text-center align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th scope="col">Invoice No</th>
+                    <th scope="col">Order Date</th>
+                    <th scope="col">Shipping Address</th>
+                    <th scope="col">Offers</th>
+                    <th scope="col">Total Amount</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Action</th>
+                </tr>
+            </thead>
+            <tbody id="order-table-body" style="background: linear-gradient(90deg, white, #f3e95e); font-weight: bold;" class="text-dark">
+                {% for order in orders %}
+                <tr>
+                    <td>{{ order.invoice_no }}</td>
+                    <td>{{ order.order_date|date:"M d, Y" }}</td>
+                    <td>{{ order.shippingaddress.first }}</td>
+                    <td>
+                        {% if order.offer.all %}
+                            {% for offer in order.offer.all %}
+                                {{ offer.name }}({{ offer.discount_percentage }}%){% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                    <td><span>&#8377;</span>{{ order.calculate_discounted_total_amount }}</td>
+                    <td>{{ order.status }}</td>
+                    <td><a href="{% url 'order_detail' order.id %}" class="btn btn-primary btn-sm">View Details</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="col-12">
+        <div class="pagination d-flex justify-content-center mt-5" id="pagination">
+            <!-- Pagination buttons will be injected by JavaScript -->
+        </div>
+    </div>
+    <span>&nbsp;</span>
+    <div class="text-center d-flex justify-content-center">
+        <form method="post" action="{% url 'export_orders_pdf' %}" class="me-3">
+            {% csrf_token %}
+            <input type="hidden" name="order_ids" value="{% for order in orders %}{{ order.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-file-pdf"></i> Export as PDF
+            </button>
+        </form>
+        <form method="post" action="{% url 'export_orders_excel' %}">
+            {% csrf_token %}
+            <input type="hidden" name="order_ids" value="{% for order in orders %}{{ order.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-file-excel"></i> Export as Excel
+            </button>
+        </form>
+    </div>
+    
+    {% else %}
+    <div class="alert alert-info text-center mt-4" role="alert">
+        <strong>No orders found.</strong>
+    </div>
+    {% endif %}
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+        const rows = document.querySelectorAll('#order-table-body tr');
+        const rowsPerPage = 5;
+        const paginationContainer = document.getElementById('pagination');
+        let currentPage = 1;
+    
+        function displayRows(page) {
+            const start = (page - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            rows.forEach((row, index) => {
+                row.style.display = (index >= start && index < end) ? '' : 'none';
+            });
+        }
+    
+        function setupPagination() {
+            const pageCount = Math.ceil(rows.length / rowsPerPage);
+            paginationContainer.innerHTML = '';
+    
+            // Previous button
+            const prevButton = document.createElement('a');
+            prevButton.href = '#';
+            prevButton.innerHTML = '&laquo;';
+            prevButton.className = 'rounded';
+            if (currentPage === 1) {
+                prevButton.classList.add('disabled');
+            }
+            prevButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                if (currentPage > 1) {
+                    currentPage--;
+                    displayRows(currentPage);
+                    setupPagination();
+                }
+            });
+            paginationContainer.appendChild(prevButton);
+    
+            // Page number buttons
+            for (let i = 1; i <= pageCount; i++) {
+                const pageButton = document.createElement('a');
+                pageButton.href = '#';
+                pageButton.textContent = i;
+                pageButton.className = 'rounded';
+                if (i === currentPage) {
+                    pageButton.classList.add('active');
+                }
+                pageButton.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    currentPage = i;
+                    displayRows(currentPage);
+                    setupPagination();
+                });
+                paginationContainer.appendChild(pageButton);
+            }
+    
+            // Next button
+            const nextButton = document.createElement('a');
+            nextButton.href = '#';
+            nextButton.innerHTML = '&raquo;';
+            nextButton.className = 'rounded';
+            if (currentPage === pageCount) {
+                nextButton.classList.add('disabled');
+            }
+            nextButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                if (currentPage < pageCount) {
+                    currentPage++;
+                    displayRows(currentPage);
+                    setupPagination();
+                }
+            });
+            paginationContainer.appendChild(nextButton);
+        }
+    
+        displayRows(currentPage);
+        setupPagination();
+    });
+</script>
+{% endblock content %}

@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% load static %}
+{% load bootstrap4 %}
+{% block content %}
+<div class="container-fluid page-header py-5">
+    <h1 class="text-center text-white display-6">Select or Add Shipping Address</h1>
+    <ol class="breadcrumb justify-content-center mb-0">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'cart' %}">Cart</a></li>
+        <li class="breadcrumb-item active text-white">Shipping Address</li>
+    </ol>
+</div>
+<style>
+    .form-group label {
+        margin-bottom: 10px; 
+    }
+    .form-group input, textarea, select {
+        margin-bottom: 10px; 
+    }
+</style>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div id="alert-container"></div>
+            <div class="mb-4">
+                <h3 class="font-size-16 mb-1">
+                    Add new address 
+                    <button class="btn btn-link p-0 text-danger type="button" data-bs-toggle="collapse" data-bs-target="#newAddressCollapse" aria-expanded="false" aria-controls="newAddressCollapse">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </h3><span>&nbsp;</span>
+                <div class="collapse" id="newAddressCollapse">
+                    <div class="card shadow-sm">
+                        <div class="card-body border-0" style="box-shadow: 0px 0px 15px rgba(123, 229, 236, 0.6);">
+                            <form id="newAddressForm" action="{% url 'checkout' %}" method="POST">
+                                {% csrf_token %}
+                                {% bootstrap_form form %}
+                                <button type="submit" class="btn btn-primary">Use this address</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <!-- Existing Addresses -->
+            <div class="mb-4">
+                <h5 class="font-size-16 mb-1">Shipping Info</h5>
+                <p class="text-muted mb-4">Select an existing address or add a new one</p>
+                <form id="existingAddressesForm" action="{% url 'checkout' %}" method="POST">
+                    {% csrf_token %}
+                    <div class="row">
+                        {% for address in shipping_addresses %}
+                        <div class="col-12 mb-3">
+                            <div class="card address-card p-3 position-relative" style="position: relative; border: 1px solid #499df0; transition: box-shadow 0.3s ease-in-out;">
+                                <input type="radio" name="address" id="info-address{{ address.id }}" value="{{ address.id }}" class="card-radio-input" {% if forloop.first %}checked{% endif %} style="position: absolute; top: 15px; left: 15px; transform: scale(1.5); cursor: pointer;">
+                                <label for="info-address{{ address.id }}" class="card-radio-label w-100 d-block" style="margin-left: 30px; display: block;">
+                                    <div class="d-inline-block ml-5 pl-3">
+                                        <h5 class="fs-14 mb-4 d-block">Address {{ forloop.counter }}</h5>
+                                        <span class="fs-14 mb-2 d-block">{{ address.name }}</span>
+                                        <span class="text-muted fw-normal text-wrap mb-1 d-block">{{ address.address }}, {{ address.city }}, {{ address.state }}, {{ address.postal_code }}</span>
+                                        <span class="text-muted fw-normal d-block">{{ address.country }} - {{ address.phone_no }}</span>
+                                    </div>
+                                </label>
+                                <div class="edit-btn bg-light rounded position-absolute" style="top: 10px; right: 10px; cursor: pointer;">
+                                    <a href="#" data-bs-toggle="tooltip" data-placement="top" title="Edit">
+                                        <i class="bx bx-pencil font-size-16"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-secondary btn-lg">
+                            Proceed to next <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Shipping Address Page End -->
+<script>
+    document.getElementById('existingAddressesForm').addEventListener('submit', function(event) {
+        const radios = document.querySelectorAll('input[name="address"]');
+        let checked = false;
+        let selectedValue = '';
+        radios.forEach(radio => {
+            if (radio.checked) {
+                checked = true;
+                selectedValue = radio.value;
+            }
+        });
+        if (!checked) {
+            event.preventDefault();
+            alert('Please select an address.');
+        } else {
+            // Add the selected address ID as a hidden input field
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'selected_address_id';
+            hiddenInput.value = selectedValue;
+            this.appendChild(hiddenInput);
+        }
+    });
+    document.getElementById('newAddressForm').addEventListener('submit', function(event) {
+        // Prevent the default form submission behavior
+        event.preventDefault();
+
+        // Get all input fields in the form
+        const inputs = this.querySelectorAll('input, textarea, select');
+        let allFieldsFilled = true;
+
+        // Iterate over each input field
+        inputs.forEach(input => {
+            // Check if the input field is empty
+            if (input.value.trim() === '') {
+                // If any field is empty, set the flag to false and add a class to indicate the empty field
+                allFieldsFilled = false;
+                input.classList.add('is-invalid');
+            } else {
+                // If the field is not empty, remove any existing validation class
+                input.classList.remove('is-invalid');
+            }
+        });
+
+        // If any field is empty, show a Bootstrap dismissible alert and do not proceed with form submission
+        if (!allFieldsFilled) {
+            const alertContainer = document.getElementById('alert-container'); // Change 'alert-container' to the ID of your alert container
+            const alertHTML = `
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    Please fill in all fields.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            alertContainer.innerHTML = alertHTML;
+            return;
+        }
+
+        // If all fields are filled, submit the form
+        this.submit();
+    });
+</script>
+{% endblock content %}

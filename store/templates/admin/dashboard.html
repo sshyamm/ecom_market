@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load static %}
+{% load bootstrap4 %}
+{% block content %}
+<div class="container-fluid page-header py-5" style="background-color: #007bff;">
+    <h1 class="text-center text-white display-6">Dashboard</h1>
+    <ol class="breadcrumb justify-content-center mb-0">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+        <li class="breadcrumb-item active text-white">Dashboard</li>
+    </ol>
+</div>
+<div class="container-fluid py-5">
+    <div class="container py-5">
+        <h1 class="mb-4 text-center" style="font-weight: bold; color: #343a40;">Available Tables</h1>
+        <div class="row">
+            {% for table in tables %}
+            <div class="col-md-4 mb-4">
+                <div class="card shadow-lg h-100 border-0 card-hover" style="transition: transform 0.3s, box-shadow 0.3s;">
+                    <a href="{% url 'dynamic_list' table_name=table %}" class="text-decoration-none text-dark">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="bi bi-grid" style="font-size: 2rem; color: #ff0000;"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h5 class="card-title font-weight-bold">{{ table }}</h5>
+                                    <p class="card-text">Tap to manage</p>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col">
+                <div class="card shadow-lg h-100 border-0 text-center">
+                    <div class="card-body">
+                        <p class="card-text">No tables found.</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Add custom CSS for hover effect and card styles -->
+<style>
+    .card-hover:hover {
+        transform: scale(1.05);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+    }
+    .card-body {
+        background: linear-gradient(135deg, #e1fae0, #ffffff);
+        border-radius: 10px;
+        padding: 20px;
+        transition: background 0.3s ease;
+    }
+    .card-body:hover {
+        background: linear-gradient(135deg, #b2ebf2, #ffffff);
+    }
+</style>
+{% endblock content %}

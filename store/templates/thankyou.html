@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load static %}
+{% load bootstrap4 %}
+{% block content %}
+<div class="container-fluid page-header py-5">
+    <h1 class="text-center text-white display-6">Thank You</h1>
+    <ol class="breadcrumb justify-content-center mb-0">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'cart' %}">Cart</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'checkout' %}">Checkout</a></li>
+        <li class="breadcrumb-item active text-white">Thank you</li>
+    </ol>
+</div>
+
+
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <h1 class="display-6 mb-4">Thank You for Purchasing With Us!</h1>
+        <p class="lead">Your order has been successfully placed.</p>
+        <img src="{% static 'img/success.gif' %}" alt="Order Confirmed" class="img-fluid" style="max-width: 400px;">
+    </div>
+    <div class="text-center mt-5">
+        <a href="{% url 'home' %}" class="btn btn-primary btn-lg">Go To Home</a>
+        <a href="{% url 'my_orders' %}" class="btn btn-warning btn-lg">My Orders</a>
+    </div>
+</div>
+{% endblock content %}

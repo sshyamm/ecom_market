@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+{% load static %}
+{% load bootstrap4 %}
+{% block content %}
+<div class="container-fluid page-header py-5">
+    <h1 class="text-center text-white display-6">Cart</h1>
+    <ol class="breadcrumb justify-content-center mb-0">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+        <li class="breadcrumb-item active text-white">Cart</li>
+    </ol>
+</div>
+
+<div class="container-fluid py-5">
+    <div class="container py-5">
+        {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-secondary alert-dismissible fade show mt-3" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+        {% endif %}
+        <div id="cart-container">
+            {% if cart_items %}
+            <form action="{% url 'select-shipping' %}" method="post">
+                {% csrf_token %}
+                <div class="table-responsive">
+                    <table class="table text-dark" style="font-size: large;">
+                        <thead>
+                            <tr>
+                                <th scope="col">Products</th>
+                                <th scope="col">Name</th>
+                                <th scope="col">Rate</th>
+                                <th scope="col">Quantity</th>
+                                <th scope="col">Price</th>
+                                <th scope="col">Handle</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product, root_image in cart_items_with_images %}
+                            <tr data-item-id="{{ product.id }}">
+                                <th scope="row">
+                                    <div class="d-flex align-items-center">
+                                        {% if root_image %}
+                                        <img src="{{ root_image.image.url }}" class="img-fluid me-5 rounded-circle"
+                                            style="width: 75px; height: 65px;" alt="{{ product.item.first.item_name }}">
+                                        {% else %}
+                                        <img src="{% static 'img/default.jpg' %}" class="img-fluid me-5 rounded-circle"
+                                            style="width: 75px; height: 65px;" alt="Default Image">
+                                        {% endif %}
+                                    </div>
+                                </th>
+                                <td>
+                                    <p class="mb-0 mt-4">{{ product.item.first.item_name }}</p>
+                                </td>
+                                <td>
+                                    <p class="mb-0 mt-4 rate" data-rate="{{ product.item.first.rate }}">{{ product.item.first.rate }} /-</p>
+                                </td>
+                                <td>
+                                    <div class="input-group quantity mt-4" style="width: 100px;">
+                                        <div class="input-group-btn">
+                                            <button type="button" class="btn btn-sm btn-minus rounded-circle bg-danger text-white">
+                                                <i class="fa fa-minus"></i>
+                                            </button>
+                                        </div>
+                                        <input type="text" name="quantity_{{ product.id }}" class="form-control form-control-sm text-center border-0 quantity-input" style="font-weight: bold;" value="{{ product.quantity }}">
+                                        <div class="input-group-btn">
+                                            <button type="button" class="btn btn-sm btn-plus rounded-circle bg-success text-white">
+                                                <i class="fa fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="price-cell">
+                                    <p class="mb-0 mt-4 price" data-price="{{ product.price }}">{{ product.price }} /-</p>
+                                </td>
+                                <td>
+                                    <button class="btn btn-md rounded-circle bg-light border mt-4 remove-item-btn" data-item-id="{{ product.id }}">
+                                        <i class="fa fa-times text-danger"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>                    
+                    </table>
+                </div>
+            
+                <div class="row g-4 justify-content-end">
+                    <div class="col-8"></div>
+                    <div class="col-sm-8 col-md-7 col-lg-6 col-xl-4">
+                        <div class="bg-light rounded">
+                            <div class="p-4">
+                                <h1 class="display-6 mb-4">Cart <span class="fw-normal">Total</span></h1>
+                                <div class="d-flex justify-content-between mb-4">
+                                    <h5 class="mb-0 me-4">Subtotal:</h5>
+                                    <p class="mb-0 total-price" style="font-size: large;" data-total-price="{{ total_price }}">{{ total_price }} /-</p>
+                                </div>
+                            </div>
+                            <div class="py-4 mb-4 border-top border-bottom d-flex justify-content-between">
+                                <h5 class="mb-0 ps-4 me-4">Total</h5>
+                                <h4 class="mb-0 pe-4 total-price display-6" data-total-price="{{ total_price }}">{{ total_price }} /-</h4>
+                            </div>
+                            <button class="btn border-secondary rounded-pill px-4 py-3 text-blue text-uppercase mb-4 ms-4"
+                                type="submit">Proceed Checkout</button>
+                            <button class="btn border-secondary rounded-pill px-4 py-3 text-danger text-uppercase mb-4 ms-4" type="button" id="clear-cart-btn">Clear Cart</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            {% else %}
+            <div class="alert alert-danger text-center" role="alert">
+                <strong>There are no items in your shopping cart.</strong>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="clearCartModal" tabindex="-1" aria-labelledby="clearCartModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="clearCartModalLabel">Clear Cart</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          Are you sure you want to clear all items from your cart?
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+          <button type="button" class="btn btn-danger" id="confirmClearCart">Yes, Clear Cart</button>
+        </div>
+      </div>
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        const updateTotalPrice = () => {
+            let total = 0;
+            document.querySelectorAll('.price').forEach(priceElement => {
+                total += parseFloat(priceElement.dataset.price);
+            });
+            document.querySelectorAll('.total-price').forEach(totalElement => {
+                totalElement.textContent = `${total.toFixed(2)} /-`;
+                totalElement.dataset.totalPrice = total.toFixed(2);
+            });
+        };
+
+        const checkIfCartIsEmpty = () => {
+            const cartItems = document.querySelectorAll('#cart-container table tbody tr');
+            if (cartItems.length === 0) {
+                document.querySelector('#cart-container').innerHTML = `
+                    <div class="alert alert-danger" role="alert">
+                        There are no items in your shopping cart.
+                    </div>`;
+            }
+        };
+
+        const showMessage = (message, type) => {
+            const messageContainer = document.createElement('div');
+            messageContainer.classList.add('alert', `alert-${type}`, 'alert-dismissible', 'fade', 'show', 'mt-3');
+            messageContainer.role = 'alert';
+            messageContainer.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            document.querySelector('.container.py-5').prepend(messageContainer);
+        };
+
+        const clearCartBtn = document.getElementById('clear-cart-btn');
+        const clearCartModal = new bootstrap.Modal(document.getElementById('clearCartModal'));
+        const confirmClearCartBtn = document.getElementById('confirmClearCart');
+
+        clearCartBtn.addEventListener('click', () => {
+            clearCartModal.show();
+        });
+
+        confirmClearCartBtn.addEventListener('click', () => {
+            fetch("{% url 'clear_cart' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken,
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    document.querySelector('#cart-container').innerHTML = `
+                        <div class="alert alert-danger" role="alert">
+                            There are no items in your shopping cart.
+                        </div>`;
+                    showMessage('All items have been cleared from the cart.', 'success');
+                    updateTotalPrice();
+                } else {
+                    showMessage('Failed to clear the cart.', 'danger');
+                }
+                clearCartModal.hide();
+            })
+            .catch(error => {
+                console.error('Error clearing cart:', error);
+                showMessage('An error occurred while clearing the cart.', 'danger');
+                clearCartModal.hide();
+            });
+        });
+
+        document.querySelectorAll('.btn-minus, .btn-plus').forEach(button => {
+            button.addEventListener('click', event => {
+                const button = event.currentTarget;
+                const row = button.closest('tr');
+                const quantityInput = row.querySelector('.quantity-input');
+                const rate = parseFloat(row.querySelector('.rate').dataset.rate);
+                let quantity = parseInt(quantityInput.value);
+
+                if (quantity === 0) {
+                    row.remove();
+                    checkIfCartIsEmpty();
+                } else {
+                    quantityInput.value = quantity;
+                    const newPrice = (rate * quantity).toFixed(2);
+                    const priceElement = row.querySelector('.price');
+                    priceElement.textContent = `${newPrice} /-`;
+                    priceElement.dataset.price = newPrice;
+                }
+
+                const itemId = row.dataset.itemId;
+
+                fetch("{% url 'update_cart_item' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': csrfToken,
+                    },
+                    body: new URLSearchParams({
+                        item_id: itemId,
+                        quantity: quantity
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success' || data.status === 'deleted') {
+                        updateTotalPrice();
+                    } else {
+                        alert('There was an error updating the cart.');
+                    }
+                });
+            });
+        });
+
+        document.querySelectorAll('.remove-item-btn').forEach(button => {
+            button.addEventListener('click', event => {
+                event.preventDefault();
+
+                const button = event.currentTarget;
+                const itemId = button.dataset.itemId;
+                const row = button.closest('tr');
+
+                fetch("{% url 'remove_item' 0 %}".replace('0', itemId), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': csrfToken,
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        row.remove();
+                        updateTotalPrice();
+                        checkIfCartIsEmpty();
+                        showMessage(`Item has been removed successfully.`, 'success');
+                    } else {
+                        showMessage('Failed to remove item.', 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error removing item:', error);
+                    showMessage('An error occurred while removing item.', 'danger');
+                });
+            });
+        });
+    });
+</script>
+{% endblock content %}

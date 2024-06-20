@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Orders PDF</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #dddddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .company-details, .user-details {
+            margin-bottom: 30px;
+        }
+        .company-details h2, .user-details h2 {
+            margin-bottom: 10px;
+            color: #333333;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #666666;
+        }
+        .clearfix::after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Order Transactions</h1>
+        <div class="company-details">
+            <h2>Company Details</h2>
+            <p><span class="info-label">Name:</span> {{ company.name }}</p>
+            <p><span class="info-label">Address:</span> {{ company.address }}, {{ company.city }}, {{ company.state }}, {{ company.country }} - {{ company.postal_code }}</p>
+            <p><span class="info-label">Email:</span> {{ company.email }}</p>
+            <p><span class="info-label">Contact No:</span> {{ company.contact_no }}</p>
+        </div>
+        <hr>
+        <div class="user-details">
+            <h2>User Details</h2>
+            <p><span class="info-label">Name:</span> {{ profile.user.first.username }}</p>
+            <p><span class="info-label">Bio:</span> {{ profile.bio }}</p>
+            <p><span class="info-label">State:</span> {{ profile.state }}</p>
+            <p><span class="info-label">Country:</span> {{ profile.country }}</p>
+            <p><span class="info-label">Phone No:</span> {{ profile.phone_no }}</p>
+            <p><span class="info-label">Website:</span> {{ profile.website }}</p>
+        </div>
+        <div class="clearfix"></div>
+        <hr>
+        <table>
+            <thead>
+                <tr>
+                    <th>Invoice No</th>
+                    <th>Order Date</th>
+                    <th>Shipping Address</th>
+                    <th>Offers</th>
+                    <th>Total Amount</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                    <tr>
+                        <td>{{ order.invoice_no }}</td>
+                        <td>{{ order.order_date|date:"M d, Y" }}</td>
+                        <td>{{ order.shippingaddress.first }}</td>
+                        <td>
+                            {% if order.offer.all %}
+                                {% for offer in order.offer.all %}
+                                    {{ offer.name }}({{ offer.discount_percentage }}%){% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                        <td><span>&#8377;</span>{{ order.calculate_discounted_total_amount }}</td>
+                        <td>{{ order.status }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

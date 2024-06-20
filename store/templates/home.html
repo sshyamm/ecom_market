@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+{% load static %}
+{% load bootstrap4 %}
+{% block content %}
+
+<!-- Hero Start -->
+<div class="container-fluid py-5 mb-5 hero-header">
+    <div class="container py-5">
+        <div class="row g-5 align-items-center">
+            <div class="col-md-12 col-lg-7">
+                <h3 class="display-6 text-dark"><i class="fas fa-hand-holding-usd"></i> Rare Auctions <i class="fas fa-gavel"></i>
+                </h3>
+                {% if user.is_authenticated %}
+                <h3>Hello, {{ user.username }}!!</h3>
+                {% else %}
+                <h3>Hello, Guest!!</h3>
+                {% endif %}
+                <h1 class="mb-5 display-3 text-blue">Discover Unique Items & Collectibles</h1>
+                <div class="position-relative mx-auto">
+                    <a href="#"
+                        class="btn btn-primary border-2 border-secondary py-3 px-4 rounded-pill text-white">Browse
+                        Upcoming Auctions</a>
+                    <a href="#"
+                        class="btn btn-secondary border-2 border-secondary py-3 px-4 rounded-pill text-dark ms-3">View
+                        Ongoing Auctions</a>
+                </div>
+            </div>
+
+            <div class="col-md-12 col-lg-5">
+                <div id="carouselId" class="carousel slide position-relative" data-bs-ride="carousel">
+                    <div class="carousel-inner" role="listbox">
+                        {% for item, root_image in items_with_images %}
+                            <div class="carousel-item {% if forloop.first %}active{% endif %} rounded">
+                                {% if root_image %}
+                                    <img src="{{ root_image.image.url }}" class="img-fluid w-100 h-100 bg-secondary rounded" alt="{{ item.item_name }}">
+                                {% else %}
+                                    <img src="{% static 'img/default.jpg' %}" class="img-fluid w-100 h-100 bg-secondary rounded" alt="{{ item.item_name }}">
+                                {% endif %}
+                                <a href="{% url 'item-details' item.id %}" class="btn px-4 py-2 text-white rounded">{{ item.item_name }}</a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <button class="carousel-control-prev" type="button" data-bs-target="#carouselId" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#carouselId" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
+                </div>
+            </div>          
+        </div>
+    </div>
+</div>
+<!-- Hero End -->
+
+<!-- Vesitable Shop Start-->
+<div class="container-fluid vesitable py-5">
+    <div class="container py-5">
+        <h1 class="mb-0">Featured/Ongoing Auctions</h1>
+        <div class="owl-carousel vegetable-carousel justify-content-center">
+            {% for item, root_image in items_with_images %}
+                {% if item.featured_item == 'yes' %}
+                    <div class="rounded position-relative vesitable-item">
+                        <div class="vesitable-img">
+                            <a href="{% url 'item-details' item.id %}">
+                                {% if root_image %}
+                                    <img src="{{ root_image.image.url }}" class="img-fluid w-100 rounded-top" alt="{{ item.item_name }}">
+                                {% else %}
+                                    <img src="{% static 'img/default.jpg' %}" class="img-fluid w-100 rounded-top" alt="{{ item.item_name }}">
+                                {% endif %}
+                            </a>
+                        </div>
+                        <div class="p-4 rounded-bottom">
+                            <h4>{{ item.item_name }}</h4>
+                            <p>{{ item.item_desc }}</p>
+                            <div class="d-flex justify-content-between flex-lg-wrap">
+                                <p class="text-dark fs-5 fw-bold mb-0">{{ item.rate }} /-</p>
+                                {% if request.user not in item.user.all %}
+                                <form method="post" action="{% url 'add_to_cart' item.id %}">
+                                    {% csrf_token %}
+                                <button type="submit" class="btn border border-secondary rounded-pill px-3 text-blue">
+                                    <i class="fa fa-shopping-bag me-2 text-blue"></i> Add to cart
+                                </button>
+                                </form>
+                                {% else %}
+                                <a href="{% url 'item-details' item.id %}" class="btn border border-secondary rounded-pill px-3 text-blue">
+                                    <i class="fas fa-eye me-2 text-blue"></i></i> View Details
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+<!-- Vesitable Shop End -->
+
+<!-- Featurs Section Start -->
+<div class="container-fluid featurs py-5">
+    <div class="container py-5">
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-3">
+                <div class="featurs-item text-center rounded bg-light p-4">
+                    <div class="featurs-icon btn-square rounded-circle bg-secondary mb-5 mx-auto">
+                        <i class="fas fa-gavel fa-3x text-white"></i>
+                    </div>
+                    <div class="featurs-content text-center">
+                        <h5>Exciting Auctions</h5>
+                        <p class="mb-2 text-blue">Discover rare items and bid on treasures</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="featurs-item text-center rounded bg-light p-4">
+                    <div class="featurs-icon btn-square rounded-circle bg-secondary mb-5 mx-auto">
+                        <i class="fas fa-shield-alt fa-3x text-white"></i>
+                    </div>
+                    <div class="featurs-content text-center">
+                        <h5>Secure Transactions</h5>
+                        <p class="mb-0 text-blue">Bid with confidence with our secure payment system</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="featurs-item text-center rounded bg-light p-4">
+                    <div class="featurs-icon btn-square rounded-circle bg-secondary mb-5 mx-auto">
+                        <i class="fas fa-clock fa-3x text-white"></i>
+                    </div>
+                    <div class="featurs-content text-center">
+                        <h5>Timeless Treasures</h5>
+                        <p class="mb-0 text-blue">Bid on historical items with 30-day return policy</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="featurs-item text-center rounded bg-light p-4">
+                    <div class="featurs-icon btn-square rounded-circle bg-secondary mb-5 mx-auto">
+                        <i class="fas fa-headset fa-3x text-white"></i>
+                    </div>
+                    <div class="featurs-content text-center">
+                        <h5>Expert Support</h5>
+                        <p class="mb-0 text-blue">Get assistance from our item experts 24/7</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Featurs Section End -->
+
+<!-- Fruits Shop Start-->
+<div class="container-fluid fruite py-5">
+    <div class="container py-5">
+        <div class="tab-class text-center">
+            <div class="row g-4">
+                <div class="text-center">
+                    <h1>Popular Rare Auctions</h1>
+                </div>
+                <div class="row g-4">
+                    <div class="col-lg-12">
+                        <div class="row g-4">
+                            {% for item, root_image in items_with_images %}
+                                <div class="col-md-6 col-lg-4 col-xl-3">
+                                    <div class="rounded position-relative fruite-item">
+                                        <div class="fruite-img">
+                                            <a href="{% url 'item-details' item.id %}">
+                                                {% if root_image %}
+                                                    <img src="{{ root_image.image.url }}" class="img-fluid w-100 rounded-top" alt="{{ item.item_name }}">
+                                                {% else %}
+                                                    <img src="{% static 'img/default.jpg' %}" class="img-fluid w-100 rounded-top" alt="{{ item.item_name }}">
+                                                {% endif %}
+                                            </a>
+                                        </div>
+                                        <div class="p-4 border-top-0 rounded-bottom">
+                                            <h4>{{ item.item_name }}</h4>
+                                            <p>{{ item.item_desc }}</p>
+                                            <div class="d-flex justify-content-between flex-lg-wrap">
+                                                <p class="text-dark fs-5 fw-bold mb-0">{{ item.rate }} /-</p>
+                                                {% if request.user not in item.user.all %}
+                                                <form method="post" action="{% url 'add_to_cart' item.id %}">
+                                                    {% csrf_token %}
+                                                <button type="submit" class="btn border border-secondary rounded-pill px-3 text-blue">
+                                                    <i class="fa fa-shopping-bag me-2 text-blue"></i> Add to cart
+                                                </button>
+                                                </form>
+                                                {% else %}
+                                                <a href="{% url 'item-details' item.id %}" class="btn border border-secondary rounded-pill px-3 text-blue">
+                                                    <i class="fas fa-eye me-2 text-blue"></i></i> View Details
+                                                </a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Fruits Shop End-->
+
+
+<!-- Banner Section Start-->
+<div class="container-fluid banner bg-secondary my-5">
+    <div class="container py-5">
+        <div class="row g-4 align-items-center">
+            <div class="col-lg-12">
+                <div class="py-4 text-center">
+                    <h1 class="display-3 text-blue">Unveil Rare Treasures</h1>
+                    <p class="fw-normal display-3 text-dark mb-4">in Our Exclusive Item Auctions</p>
+                    <p class="mb-4 text-dark">
+                        Embark on a journey to <i class="fas fa-gem text-blue"></i> uncover hidden gems and <i
+                            class="fas fa-history text-blue"></i> historical treasures in our curated item auctions.
+                        <i class="fas fa-gavel text-blue"></i> Bid now and make history!
+                    </p>
+                    <a href="#" class="banner-btn btn border-2 border-white rounded-pill text-dark py-3 px-5">Explore
+                        more
+                        <i class="fas fa-arrow-alt-circle-right ms-2"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Banner Section End -->
+
+<!-- Fact Start -->
+<div class="container-fluid py-5">
+    <div class="container">
+        <div class="bg-light p-5 rounded">
+            <div class="row g-4 justify-content-center">
+                <div class="col-md-6 col-lg-6 col-xl-3">
+                    <div class="counter bg-white rounded p-5">
+                        <i class="fa fa-gavel text-blue"></i>
+                        <h4>Auctioned Treasures</h4>
+                        <h1>1963</h1>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-6 col-xl-3">
+                    <div class="counter bg-white rounded p-5">
+                        <i class="fa fa-thumbs-up text-blue"></i>
+                        <h4>Satisfaction Rate</h4>
+                        <h1>99%</h1>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-6 col-xl-3">
+                    <div class="counter bg-white rounded p-5">
+                        <i class="fa fa-certificate text-blue"></i>
+                        <h4>Certified Items</h4>
+                        <h1>33</h1>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-6 col-xl-3">
+                    <div class="counter bg-white rounded p-5">
+                        <i class="fas fa-hand-holding-usd text-blue"></i>
+                        <h4>Unique Items</h4>
+                        <h1>789</h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Fact Start -->
+{% endblock content %}

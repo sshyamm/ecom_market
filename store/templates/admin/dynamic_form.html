@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load static %}
+{% load bootstrap4 %}
+{% load custom_filters %}
+{% block content %}
+<style>
+    .form-group label {
+        margin-bottom: 10px; 
+    }
+    .form-group input, textarea, select {
+        margin-bottom: 14px; 
+    }
+</style>
+<div class="container-fluid page-header py-5">
+    <h1 class="text-center text-white display-6">Dashboard</h1>
+    <ol class="breadcrumb justify-content-center mb-0">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+        <li class="breadcrumb-item active text-white">Dashboard</li>
+    </ol>
+</div>
+<div class="container-fluid py-5">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card mt-4">
+                    <div class="card-body">
+                        {% if table_name == 'itemimage' %}
+                        <h3 class="card-title""><strong>{{ table_name|title }} Form</strong> <a href="{% url 'manage_item_images' item.pk %}?category_id={{ category.pk }}" class="btn btn-warning">Return</a></h3>
+                        {% elif table_name == 'orderitem' %}
+                        <h3 class="card-title""><strong>{{ table_name|title }} Form</strong> <a href="{% url 'manage_order_items' order.pk %}" class="btn btn-warning">Return</a></h3>
+                        {% elif table_name == 'bid' %}
+                        <h3 class="card-title""><strong>{{ table_name|title }} Form</strong> <a href="{% url 'manage_bids' item.pk %}?category_id={{ category.pk }}" class="btn btn-warning">Return</a></h3>
+                        {% elif table_name == 'item' %}
+                        <h3 class="card-title""><strong>{{ table_name|title }} Form</strong> <a href="{% url 'manage_category_items' category.pk %}" class="btn btn-warning">Return</a></h3>
+                        {% else %}
+                        <h3 class="card-title""><strong>{{ table_name|title }} Form</strong> <a href="{% url 'dynamic_list' table_name %}" class="btn btn-warning">Return</a></h3>
+                        {% endif %}
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            {% bootstrap_form form %}                           
+                            <button type="submit" class="btn btn-primary">Submit</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
