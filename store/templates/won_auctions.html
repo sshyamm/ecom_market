@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% load static %}
+{% load bootstrap4 %}
+{% load auction_tags %}
+{% block content %}
+<div class="container-fluid page-header py-5">
+    <h1 class="text-center text-white display-6">Activity</h1>
+    <ol class="breadcrumb justify-content-center mb-0">
+        <li class="breadcrumb-item"><a href="{% url 'won-auctions' %}">Home</a></li>
+        <li class="breadcrumb-item active text-white">Activity</li>
+    </ol>
+</div>
+
+<div class="container-fluid py-5">
+    <div class="container py-5">
+        <h1 class="text-center mb-5">Won Auctions</h1>
+        <div class="row">
+            <div class="col-md-3">
+                <div class="sidebar bg-white shadow-lg rounded p-3" style="background: linear-gradient(to top, #f8f9fa, #c8f3c2);">
+                    <nav class="nav flex-column">
+                        <a href="{% url 'participated-auctions' %}" class="nav-link text-blue mb-2">
+                            <i class="bi bi-people-fill me-2"></i> Participated/Defeated
+                        </a>
+                        <a href="{% url 'won-auctions' %}" class="nav-link text-blue mb-2">
+                            <i class="bi bi-trophy-fill me-2"></i> Won Auctions
+                        </a>
+                        <!-- Add more links here as needed -->
+                    </nav>
+                </div>
+            </div>
+            <div class="col-md-9">
+                {% if items_with_images %}
+                    <div class="table-responsive">
+                        <table id="order-table" class="table text-center align-middle">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th scope="col">Image</th>
+                                    <th scope="col">Item Name</th>
+                                    <th scope="col">Won Amount</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">End Time</th>
+                                    <th scope="col">Invoice</th>
+                                </tr>
+                            </thead>
+                            <tbody id="order-table-body"
+                                style="background: linear-gradient(90deg, white, #f3e95e); font-weight: bold;" class="text-dark">
+                                {% for item, root_image in items_with_images %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'auction-details' item.id %}">
+                                            {% if root_image %}
+                                            <img src="{{ root_image.image.url }}" class="img-fluid rounded"
+                                                alt="{{ item.item_name }}" style="max-width: 100px;">
+                                            {% else %}
+                                            <img src="{% static 'img/default.jpg' %}" class="img-fluid rounded"
+                                                alt="{{ item.item_name }}" style="max-width: 100px;">
+                                            {% endif %}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <div><a href="{% url 'auction-details' item.id %}" style="color: blue;">{{ item.item_name }}</a></div>
+                                    </td>
+                                    <td>{{ item.highest_bid }}/-</td>
+                                    <td>
+                                        <span class="badge bg-success">WON</span>
+                                    </td>
+                                    <td>{{ item.end_time|date:"Y-m-d H:i:s T" }}</td>
+                                    <td>
+                                        {% with order=orders|get_order_by_item:item %}
+                                            {% if order %}
+                                                <a href="{% url 'order_detail' order.id %}" class="btn btn-primary btn-sm">View Details</a>
+                                            {% else %}
+                                                <div class="text-danger">Invoice yet to be generated</div>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination d-flex justify-content-center mt-5" id="pagination">
+                        <!-- Pagination buttons can be injected by JavaScript if needed -->
+                    </div>
+                {% else %}
+                    <div class="alert alert-danger text-center" role="alert">
+                        <strong>You have not won any auctions.</strong>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+        const rows = document.querySelectorAll('#order-table-body tr');
+        const rowsPerPage = 5;
+        const paginationContainer = document.getElementById('pagination');
+        let currentPage = 1;
+    
+        function displayRows(page) {
+            const start = (page - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            rows.forEach((row, index) => {
+                row.style.display = (index >= start && index < end) ? '' : 'none';
+            });
+        }
+    
+        function setupPagination() {
+            const pageCount = Math.ceil(rows.length / rowsPerPage);
+            paginationContainer.innerHTML = '';
+    
+            // Previous button
+            const prevButton = document.createElement('a');
+            prevButton.href = '#';
+            prevButton.innerHTML = '&laquo;';
+            prevButton.className = 'rounded';
+            if (currentPage === 1) {
+                prevButton.classList.add('disabled');
+            }
+            prevButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                if (currentPage > 1) {
+                    currentPage--;
+                    displayRows(currentPage);
+                    setupPagination();
+                }
+            });
+            paginationContainer.appendChild(prevButton);
+    
+            // Page number buttons
+            for (let i = 1; i <= pageCount; i++) {
+                const pageButton = document.createElement('a');
+                pageButton.href = '#';
+                pageButton.textContent = i;
+                pageButton.className = 'rounded';
+                if (i === currentPage) {
+                    pageButton.classList.add('active');
+                }
+                pageButton.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    currentPage = i;
+                    displayRows(currentPage);
+                    setupPagination();
+                });
+                paginationContainer.appendChild(pageButton);
+            }
+    
+            // Next button
+            const nextButton = document.createElement('a');
+            nextButton.href = '#';
+            nextButton.innerHTML = '&raquo;';
+            nextButton.className = 'rounded';
+            if (currentPage === pageCount) {
+                nextButton.classList.add('disabled');
+            }
+            nextButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                if (currentPage < pageCount) {
+                    currentPage++;
+                    displayRows(currentPage);
+                    setupPagination();
+                }
+            });
+            paginationContainer.appendChild(nextButton);
+        }
+    
+        displayRows(currentPage);
+        setupPagination();
+    });
+</script>
+{% endblock %}

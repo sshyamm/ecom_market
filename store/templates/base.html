@@ -87,7 +87,7 @@
                             <a href="{% url 'my_orders' %}" class="nav-item nav-link text-danger">My Orders</a>
                             <a href="{% url 'order_history' %}" class="nav-item nav-link text-blue">Transactions</a>
                         {% endif %}
-                        <a href="#" class="nav-item nav-link text-danger">Bid Now</a>
+                        <a href="{% url 'won-auctions' %}" class="nav-item nav-link text-danger">Activity</a>
                         {% if user.is_authenticated and user.is_superuser %}
                             <a href="{% url 'dashboard' %}" class="nav-item nav-link text-blue">Dashboard</a>
                             {% endif %}

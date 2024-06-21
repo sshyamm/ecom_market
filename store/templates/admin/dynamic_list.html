@@ -200,7 +200,11 @@
                         </tr>
                         {% empty %}
                         <tr>
+                            {% if table_name == 'order' %}
+                            <td colspan="{{ fields_length|add:2 }}">No items found.</td>
+                            {% else %}
                             <td colspan="{{ fields_length|add:1 }}">No items found.</td>
+                            {% endif %}
                         </tr>
                         {% endfor %}
                     </tbody>

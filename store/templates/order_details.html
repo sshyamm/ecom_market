@@ -88,7 +88,13 @@
                                                 <p class="text-muted mb-0">{{ items.item.first.item_desc }}</p>
                                             </div>
                                         </td>
-                                        <td><span>&#8377;</span> {{ items.item.first.rate }}</td>
+                                        <td><span>&#8377;</span> 
+                                            {% if items.item.first.rate %}
+                                            {{ items.item.first.rate }}
+                                            {% else %}
+                                            {{ items.item.first.highest_bid }}
+                                            {% endif %}
+                                        </td>
                                         <td>{{ items.quantity }}</td>
                                         <td class="text-end"><span>&#8377;</span> {{ items.price }}</td>
                                     </tr>

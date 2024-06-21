@@ -73,6 +73,9 @@
                       <div class="card-body d-flex justify-content-between align-items-center">
                         <p class="card-text mb-0">
                           <strong>{{ address.address }}, {{ address.city }}, {{ address.state }}, {{ address.postal_code }}, {{ address.country }}, {{ address.phone_no }}</strong>
+                          {% if address.primary == 'yes' %}
+                          <span class="badge bg-primary">PRIMARY</span>
+                          {% endif %}
                         </p>
                         <div class="dropdown">
                           <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton{{ address.id }}" data-bs-toggle="dropdown" aria-expanded="false">
@@ -81,6 +84,7 @@
                           <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton{{ address.id }}">
                             <li><a class="dropdown-item" href="{% url 'edit_shipping_address' address.id %}">Edit</a></li>
                             <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#deleteAddressModal{{ address.id }}">Delete</a></li>
+                            <li><a class="dropdown-item" href="{% url 'set_primary_address' address.id %}">Set as primary</a></li>
                           </ul>
                         </div>
                       </div>

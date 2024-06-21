@@ -250,6 +250,11 @@ class ShippingCharge(models.Model):
         return f"{self.country.name}, {self.state}: {self.charge}"
 
 class ShippingAddress(models.Model):
+    PRIMARY_CHOICES = [
+        ('yes', 'Yes'),
+        ('no', 'No'),
+    ]
+
     address = models.CharField(max_length=255, null=True, blank=True)
     city = models.CharField(max_length=100, null=True, blank=True)
     state = models.CharField(max_length=100, null=True, blank=True)
@@ -257,6 +262,7 @@ class ShippingAddress(models.Model):
     country = CountryField(null=True, blank=True)
     phone_no = models.CharField(max_length=20, null=True, blank=True) 
     user = models.ArrayReferenceField(to=User, null=True, blank=True, on_delete=models.CASCADE)
+    primary = models.CharField(max_length=3, choices=PRIMARY_CHOICES, default='no')
 
     def get_shipping_charge(self):
         try:
@@ -269,7 +275,17 @@ class ShippingAddress(models.Model):
         else:
             company = Company.objects.first()  # Assuming there is at least one company
             return company.shipping_charge
-        
+
+    def clean(self):
+        if self.primary == 'yes' and self.user.first().shippingaddress_set.filter(primary='yes').exclude(pk=self.pk).count() > 0:
+            raise ValidationError("You can only have one primary address.")
+        super().clean()
+
+    def save(self, *args, **kwargs):
+        if not self.pk and not self.user.first().shippingaddress_set.count() > 0:
+            self.primary = 'yes'
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.address}, {self.city}, {self.state}, {self.postal_code}"
 
@@ -476,8 +492,11 @@ class OrderItem(models.Model):
     def calculate_price(self):
         if self.item and self.item.first():
             item_rate = self.item.first().rate
+            item_highest_bid = self.item.first().highest_bid
             if item_rate is not None:
                 self.price = Decimal(self.quantity) * Decimal(item_rate)
+            elif item_highest_bid is not None:
+                self.price = Decimal(self.quantity) * Decimal(str(item_highest_bid))
             else:
                 raise ValueError("Item rate is not defined.")
         else:

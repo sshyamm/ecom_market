@@ -9,7 +9,6 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import update_session_auth_hash
 from django.http import HttpResponseRedirect
 from .forms import *
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.views.decorators.http import require_POST
 from decimal import Decimal
 from django.utils import timezone
@@ -25,6 +24,77 @@ from django.urls import reverse_lazy
 from django.contrib.admin.sites import site
 
 FORMS_FOR_TABLES = { 'Order': OrderForm, 'Bid' : BidAdminForm, 'Item' : ItemForm, 'ItemImage' : ItemImageForm, 'Profile' : ProfileForm, 'CartItem' : CartItemForm, 'ShippingAddress' : ShippingAddressForm, 'OrderItem' : OrderItemForm, 'Offer' : OfferForm, }
+
+@login_required
+def set_primary_address(request, address_id):
+    address = get_object_or_404(ShippingAddress, id=address_id, user=request.user)
+
+    try:
+        # Set all other addresses to not primary
+        ShippingAddress.objects.filter(user=request.user).update(primary='no')
+
+        # Set the selected address as primary
+        address.primary = 'yes'
+        address.save()
+        messages.success(request, "Primary address set successfully.")
+    except ValidationError as e:
+        messages.error(request, str(e))
+    except Exception as e:
+        messages.error(request, "An error occurred while setting the primary address.")
+
+    return redirect('view_profile')
+
+@login_required
+def won_auctions(request):
+    now_utc = timezone.now()
+    now_indian_time = now_utc.astimezone(timezone.get_current_timezone())
+    orders = Order.objects.filter(user=request.user).order_by('-order_date')
+
+    # Filter items that are auctions, have ended, and where the logged-in user is in the highest_bidder array
+    won_items = Item.objects.filter(
+        purpose='auction',
+        end_time__lte=now_indian_time,
+        highest_bidder__in=[request.user],  # Assuming you're using django-arrayfield
+        is_deleted='no'
+    )
+
+    items_with_images = []
+    for item in won_items:
+        root_image = ItemImage.objects.filter(item=item, root_image='yes').first()
+        items_with_images.append((item, root_image))
+
+    return render(request, 'won_auctions.html', {'items_with_images': items_with_images, 'orders' : orders})
+
+
+@login_required
+def participated_auctions(request):
+    now_utc = timezone.now()
+    now_indian_time = now_utc.astimezone(timezone.get_current_timezone())
+
+    # Filter items that are auctions, have ended, and where the logged-in user has placed bids
+    participated_items = Item.objects.filter(
+        purpose='auction',
+        end_time__lte=now_indian_time,
+        is_deleted='no',
+        bid__bidder__in=[request.user.id],  # Check if the user has placed bids
+    ).exclude(
+        highest_bidder__in=[request.user.id]  # Exclude items where the logged-in user is the highest bidder
+    ).distinct()
+
+    items_with_images = []
+    for item in participated_items:
+        root_image = ItemImage.objects.filter(item=item, root_image='yes').first()
+        # Get the user's last bid for this item
+        last_bid = Bid.objects.filter(item=item, bidder=request.user).order_by('-timestamp').first()
+        if last_bid:
+            defeated_difference = Decimal(str(item.highest_bid)) - Decimal(str(last_bid.bid_amount))
+        else:
+            defeated_difference = None
+        items_with_images.append((item, root_image, defeated_difference))
+
+    return render(request, 'participated_auctions.html', {'items_with_images': items_with_images})
+
+
 
 def category_items(request, category_id):
     category = get_object_or_404(Category, pk=category_id)
@@ -969,6 +1039,11 @@ def place_bid(request, item_id):
     item = get_object_or_404(Item, id=item_id)
 
     latest_bid = Bid.objects.filter(item=item).order_by('-timestamp').first()
+
+    # Check if the logged-in user has created at least one shipping address
+    if not ShippingAddress.objects.filter(user=request.user).count() > 0:
+        messages.error(request, "You must create a shipping address before placing a bid.")
+        return redirect('auction-details', item_id=item.id)
     
     if request.method == 'POST':
         bid_form = BidForm(request.POST)
