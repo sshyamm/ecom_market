@@ -1038,6 +1038,13 @@ def auction_details(request, item_id):
 def place_bid(request, item_id):
     item = get_object_or_404(Item, id=item_id)
 
+    # Check if item end_time has passed current Indian time
+    now_utc = timezone.now()
+    now_indian_time = now_utc.astimezone(timezone.get_current_timezone())
+    if item.end_time <= now_indian_time:
+        messages.error(request, "Bidding for this item has ended.")
+        return redirect('auction-details', item_id=item.id)
+    
     latest_bid = Bid.objects.filter(item=item).order_by('-timestamp').first()
 
     # Check if the logged-in user has created at least one shipping address
@@ -1121,7 +1128,19 @@ def place_bid(request, item_id):
 @login_required
 def place_auto_bid(request, item_id):
     item = get_object_or_404(Item, id=item_id)
+
+    # Check if item end_time has passed current Indian time
+    now_utc = timezone.now()
+    now_indian_time = now_utc.astimezone(timezone.get_current_timezone())
+    if item.end_time <= now_indian_time:
+        messages.error(request, "Bidding for this item has ended.")
+        return redirect('auction-details', item_id=item.id)
     
+    # Check if the logged-in user has created at least one shipping address
+    if not ShippingAddress.objects.filter(user=request.user).count() > 0:
+        messages.error(request, "You must create a shipping address before placing a bid.")
+        return redirect('auction-details', item_id=item.id)
+      
     if request.method == 'POST':
         auto_bid_form = AutoBidForm(request.POST)
         
