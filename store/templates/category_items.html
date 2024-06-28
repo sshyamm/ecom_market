@@ -25,7 +25,11 @@
                                 <div class="col-md-6 col-lg-4 col-xl-3">
                                     <div class="rounded position-relative fruite-item">
                                         <div class="fruite-img">
+                                            {% if item.purpose == 'sale' %}
                                             <a href="{% url 'item-details' item.id %}">
+                                            {% elif item.purpose == 'auction' %}
+                                                <a href="{% url 'auction-details' item.id %}">
+                                            {% endif %}
                                                 {% if root_image %}
                                                 <img src="{{ root_image.image.url }}" class="img-fluid w-100 rounded-top" alt="{{ item.item_name }}">
                                                 {% else %}
@@ -37,7 +41,13 @@
                                             <h4>{{ item.item_name }}</h4>
                                             <p>{{ item.item_desc }}</p>
                                             <div class="d-flex justify-content-between flex-lg-wrap">
-                                                <p class="text-dark fs-5 fw-bold mb-0">{{ item.rate }} /-</p>
+                                                <p class="text-dark fs-5 fw-bold mb-0">
+                                                    {% if item.purpose == 'sale' %}
+                                                    {{ item.rate }} /-
+                                                    {% elif item.purpose == 'auction' %}
+                                                    Auction
+                                                    {% endif %}
+                                                </p>
                                                 {% if request.user not in item.user.all %}
                                                 <form method="post" action="{% url 'add_to_cart' item.id %}">
                                                     {% csrf_token %}
@@ -46,7 +56,11 @@
                                                     </button>
                                                 </form>
                                                 {% else %}
+                                                {% if item.purpose == 'sale' %}
                                                 <a href="{% url 'item-details' item.id %}" class="btn border border-secondary rounded-pill px-3 text-blue">
+                                                {% elif item.purpose == 'auction' %}
+                                                    <a href="{% url 'auction-details' item.id %}" class="btn border border-secondary rounded-pill px-3 text-blue">
+                                                {% endif %}
                                                     <i class="fas fa-eye me-2 text-blue"></i> View Details
                                                 </a>
                                                 {% endif %}

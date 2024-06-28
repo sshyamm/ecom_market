@@ -137,3 +137,6 @@ LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = "login"
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+RAZORPAY_KEY_ID = 'rzp_test_qdTCzfVwGhvWtW'
+RAZORPAY_KEY_SECRET = '9gVT5GX19E1QijlSdN9SopuQ'

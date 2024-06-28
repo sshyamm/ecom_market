@@ -11,8 +11,80 @@
     </ol>
 </div>
 <div class="container py-5">
+    {% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-success alert-dismissible fade show mt-3 text-center" role="alert">
+            <strong>{{ message }}</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+    {% endif %}
     <div class="row justify-content-center">
         <div class="col-lg-10">
+            {% if order.status != 'Paid' %}
+            <div class="text-center">
+                <form id="payForm" action="{% url 'pay_order' order.id %}" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="razorpay_order_id" id="razorpay_order_id" value="">
+                    <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id" value="">
+                    <input type="hidden" name="razorpay_signature" id="razorpay_signature" value="">
+                    <button type="submit" id="rzp-button" class="btn btn-warning">Pay Now</button>
+                    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+                    <script>
+                        var options = {
+                            "key": "rzp_test_qdTCzfVwGhvWtW", 
+                            "amount": "{{amount}}", 
+                            "currency": "INR",
+                            "name": "{{request.user}}",
+                            "description": "Payment for your order",
+                            "order_id": "{{orderid}}", 
+                            "handler": function (response){
+                                document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
+                                document.getElementById('razorpay_order_id').value = response.razorpay_order_id;
+                                document.getElementById('razorpay_signature').value = response.razorpay_signature;
+                                document.getElementById('payForm').submit();
+                            },
+                            "prefill": {
+                                "name": "{{request.user.get_full_name}}",
+                                "email": "{{request.user.email}}"
+                            },
+                            "theme": {
+                                "color": "#3399cc"
+                            },
+                            "modal": {
+                                "ondismiss": function() {
+                                    console.log("Form closed");
+                                }
+                            }
+                        };
+                        var rzp1 = new Razorpay(options);
+                        rzp1.on('payment.failed', function (response){
+                            alert("Payment failed: " + response.error.description);
+                        });
+                        document.getElementById('rzp-button').onclick = function(e){
+                            e.preventDefault();
+                            fetch("{% url 'initiate_payment' order.id %}", {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': '{{ csrf_token }}',
+                                },
+                                body: JSON.stringify({})
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.status === 'success') {
+                                    rzp1.open();
+                                } else {
+                                    alert('Failed to initiate payment. Please try again.');
+                                }
+                            })
+                            .catch(error => console.error('Error:', error));
+                        }
+                    </script>
+                </form>
+            </div><span>&nbsp;</span>
+            {% endif %}
             <div style="box-shadow: 0 20px 27px 0 rgb(0 0 0 / 50%);position: relative;display: flex;flex-direction: column;min-width: 0;word-wrap: break-word;background-color: #fff;background-clip: border-box;border: 0 solid rgba(0,0,0,.125);border-radius: 1rem;" class="card">
                 <div class="card-body">
                     <div class="invoice-title">

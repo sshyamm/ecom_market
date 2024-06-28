@@ -68,7 +68,12 @@
                                     <td>
                                         {% with order=orders|get_order_by_item:item %}
                                             {% if order %}
-                                                <a href="{% url 'order_detail' order.id %}" class="btn btn-primary btn-sm">View Details</a>
+                                            <a href="{% url 'order_detail' order.id %}" class="btn btn-primary btn-sm">View Details</a>
+                                            {% if order.status == 'Paid' %}
+                                            <button type="button" class="btn btn-sm btn-outline-success">PAID</button>
+                                            {% elif order.status == 'Pending' %}
+                                                <button type="button" class="btn btn-sm btn-outline-danger">PENDING</button>
+                                            {% endif %}
                                             {% else %}
                                                 <div class="text-danger">Invoice yet to be generated</div>
                                             {% endif %}

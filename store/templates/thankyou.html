@@ -16,7 +16,7 @@
 <div class="container py-5">
     <div class="text-center mb-5">
         <h1 class="display-6 mb-4">Thank You for Purchasing With Us!</h1>
-        <p class="lead">Your order has been successfully placed.</p>
+        <p class="lead">Your order {{ order.id }} has been successfully placed with total amount {{ order.calculate_discounted_total_amount }}/-.</p>
         <img src="{% static 'img/success.gif' %}" alt="Order Confirmed" class="img-fluid" style="max-width: 400px;">
     </div>
     <div class="text-center mt-5">

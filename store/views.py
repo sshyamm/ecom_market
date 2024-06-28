@@ -10,7 +10,7 @@ from django.contrib.auth import update_session_auth_hash
 from django.http import HttpResponseRedirect
 from .forms import *
 from django.views.decorators.http import require_POST
-from decimal import Decimal
+from decimal import Decimal, getcontext
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from datetime import datetime, timedelta
@@ -22,8 +22,56 @@ from openpyxl import Workbook
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from django.contrib.admin.sites import site
+import razorpay
+from django.views.decorators.csrf import csrf_exempt
 
 FORMS_FOR_TABLES = { 'Order': OrderForm, 'Bid' : BidAdminForm, 'Item' : ItemForm, 'ItemImage' : ItemImageForm, 'Profile' : ProfileForm, 'CartItem' : CartItemForm, 'ShippingAddress' : ShippingAddressForm, 'OrderItem' : OrderItemForm, 'Offer' : OfferForm, }
+
+@login_required
+def initiate_payment(request, order_id):
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    if request.method == 'POST':
+        order.payment_initiated_at = timezone.now()
+        order.save()
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'failed'}, status=400)
+
+@login_required
+def pay_order(request, order_id):
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    if request.method == 'POST':
+        try:
+            # Extract parameters from POST request
+            razorpay_order_id = request.POST.get('razorpay_order_id')
+            razorpay_payment_id = request.POST.get('razorpay_payment_id')
+            razorpay_signature = request.POST.get('razorpay_signature')
+
+            # Initialize Razorpay client
+            client = razorpay.Client(auth=("rzp_test_qdTCzfVwGhvWtW", "9gVT5GX19E1QijlSdN9SopuQ"))
+
+            # Verify payment signature
+            params_dict = {
+                'razorpay_order_id': razorpay_order_id,
+                'razorpay_payment_id': razorpay_payment_id,
+                'razorpay_signature': razorpay_signature,
+            }
+            client.utility.verify_payment_signature(params_dict)
+
+            order.status = 'Paid'
+            order.razorpay_order_id=razorpay_order_id
+            order.razorpay_payment_id=razorpay_payment_id
+            order.razorpay_signature=razorpay_signature
+            order.payment_completed_at = timezone.now()
+            order.save()
+            amount_paid = order.calculate_discounted_total_amount()
+            messages.success(request, f'Paid Successfully with amount {amount_paid}!!')
+            return redirect(reverse('order_detail', args=[order.id]))
+
+        except Exception as e:
+            # Log the error for debugging purposes
+            logger.error(f"Payment verification failed: {str(e)}")
+            return HttpResponse("Payment verification failed. Please try again or contact support.")
+    return redirect('home')
 
 @login_required
 def set_primary_address(request, address_id):
@@ -284,6 +332,7 @@ def select_shipping(request):
         'form': form,
     })
 
+@csrf_exempt
 @login_required
 def order_detail(request, order_id):
     order = get_object_or_404(Order, id=order_id)
@@ -291,11 +340,20 @@ def order_detail(request, order_id):
     company = Company.objects.first()
     shipping_address = order.shippingaddress.first
 
+    getcontext().prec = 28  # Example precision, adjust as needed
+    final_price_in_paise = order.calculate_discounted_total_amount() * Decimal('100')
+    amount = str(final_price_in_paise.quantize(Decimal('1')))
+    client = razorpay.Client(auth=("rzp_test_qdTCzfVwGhvWtW", "9gVT5GX19E1QijlSdN9SopuQ"))
+    payment = client.order.create({'amount' : amount, 'currency' : 'INR', 'payment_capture' : '1'})
+    orderid = payment['id']
+
     context = {
         'order': order,
         'order_items': order_items,
         'company': company,
-        'shipping_address': shipping_address
+        'shipping_address': shipping_address,
+        'amount' : amount,
+        'orderid' : orderid
     }
     return render(request, 'order_details.html', context)
 
@@ -322,41 +380,82 @@ def thankyou(request, order_id):
         return render(request, 'thankyou.html', context)
     else:
         return redirect(reverse('home'))
+    
+import pytz
+import logging 
+# Configure logger
+logger = logging.getLogger(__name__)
 
+@csrf_exempt
 @login_required
 def place_order(request):
     if request.method == 'POST':
-        selected_address_id = request.POST.get('selected_address_id')
-        eligible_offers_ids = request.POST.getlist('eligible_offers')
-        eligible_offers = Offer.objects.filter(id__in=eligible_offers_ids)
+        try:
+            # Extract parameters from POST request
+            razorpay_order_id = request.POST.get('razorpay_order_id')
+            razorpay_payment_id = request.POST.get('razorpay_payment_id')
+            razorpay_signature = request.POST.get('razorpay_signature')
+
+            # Initialize Razorpay client
+            client = razorpay.Client(auth=("rzp_test_qdTCzfVwGhvWtW", "9gVT5GX19E1QijlSdN9SopuQ"))
+
+            # Verify payment signature
+            params_dict = {
+                'razorpay_order_id': razorpay_order_id,
+                'razorpay_payment_id': razorpay_payment_id,
+                'razorpay_signature': razorpay_signature,
+            }
+            client.utility.verify_payment_signature(params_dict)
+
+            # Payment signature verified, proceed with order creation
+            selected_address_id = request.POST.get('selected_address_id')
+            eligible_offers_ids = request.POST.getlist('eligible_offers')
+            payment_initiated_at_str = request.POST.get('payment_initiated_at')
+
+            # Convert string to datetime object
+            payment_initiated_at = datetime.fromisoformat(payment_initiated_at_str.replace('Z', '+00:00'))
+            eligible_offers = Offer.objects.filter(id__in=eligible_offers_ids)
+                
+            selected_address = ShippingAddress.objects.get(pk=selected_address_id)
+
+            # Create order with the address and eligible offers
+            order = Order.objects.create(
+                status='Paid',
+                razorpay_order_id=razorpay_order_id,
+                razorpay_payment_id=razorpay_payment_id,
+                razorpay_signature=razorpay_signature,
+                payment_initiated_at = payment_initiated_at,
+                payment_completed_at=timezone.now()
+            )
+            order.user.add(request.user)
+            order.shippingaddress.add(selected_address)
+
+            for offer in eligible_offers:
+                order.offer.add(offer)
+
+            # Fetch all cart items for the current user
+            cart_items = CartItem.objects.filter(user=request.user)
+
+            # Create order items based on cart items
+            for cart_item in cart_items:
+                order_item = OrderItem()
+                order_item.order.add(order)
+                order_item.item.add(*cart_item.item.all())
+                order_item.quantity = cart_item.quantity
+                order_item.save()
+            cart_items.delete()
+            request.session['order_placed'] = True
+
+            # Redirect to the thank you page
+            return HttpResponseRedirect(reverse('thankyou', kwargs={'order_id': order.id}))
+
+        except Exception as e:
+            logger.exception("Payment verification failed.")
             
-        selected_address = ShippingAddress.objects.get(pk=selected_address_id)
-
-        # Create order with the address and eligible offers
-        order = Order.objects.create(status='Pending')
-        order.user.add(request.user)
-        order.shippingaddress.add(selected_address)
-
-        for offer in eligible_offers:
-            order.offer.add(offer)
-
-        # Fetch all cart items for the current user
-        cart_items = CartItem.objects.filter(user=request.user)
-
-        # Create order items based on cart items
-        for cart_item in cart_items:
-            order_item = OrderItem()
-            order_item.order.add(order)
-            order_item.item.add(*cart_item.item.all())
-            order_item.quantity = cart_item.quantity
-            order_item.save()
-        cart_items.delete()
-        request.session['order_placed'] = True
-
-        # Redirect to the cart page
-        return HttpResponseRedirect(reverse('thankyou', kwargs={'order_id': order.id}))
-
-    # If the request method is not POST or if an error occurs, redirect back to the checkout page
+            # Return HTTP response with error message and exception details
+            return HttpResponse(f"Payment verification failed: {str(e)}. Please try again or contact support.")
+    
+    # If the request method is not POST or if an error occurs, redirect back to the cart page
     return redirect('cart')
 
 @login_required
@@ -462,6 +561,13 @@ def checkout_view(request):
         else:
             final_price += default_shipping_charge
 
+        getcontext().prec = 28  # Example precision, adjust as needed
+        final_price_in_paise = final_price * Decimal('100')
+        amount = str(final_price_in_paise.quantize(Decimal('1')))
+        client = razorpay.Client(auth=("rzp_test_qdTCzfVwGhvWtW", "9gVT5GX19E1QijlSdN9SopuQ"))
+        payment = client.order.create({'amount' : amount, 'currency' : 'INR', 'payment_capture' : '1'})
+        orderid = payment['id']
+
         return render(request, 'checkout.html', {
             'cart_items': cart_items,
             'cart_items_with_images': cart_items_with_images,
@@ -471,10 +577,12 @@ def checkout_view(request):
             'eligible_offers': list(eligible_offers.values()),  # Pass eligible offers to the template
             'revised_discount_percentage': revised_discount_percentage,
             'applied_shipping_charge': shipping_charge_decimal if shipping_charge else default_shipping_charge,
+            'orderid': orderid,
+            'amount' : amount,
         })
     else:
         return redirect('cart')
-    
+ 
 @login_required
 def add_to_cart(request, item_id):
     if request.method == 'POST':

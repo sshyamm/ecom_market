@@ -307,22 +307,27 @@ class Offer(models.Model):
 
 class Order(models.Model):
     # Define choices for order status
-    ORDER_STATUS_CHOICES = (
+    PAYMENT_STATUS_CHOICES = (
         ('Pending', 'Pending'),
-        ('Processing', 'Processing'),
-        ('Shipped', 'Shipped'),
-        ('Delivered', 'Delivered'),
-        ('Cancelled', 'Cancelled'),
+        ('Paid', 'Paid'),
     )
 
     invoice_no = models.CharField(max_length=20, unique=True, null=True, blank=True, editable=False)
     user = models.ArrayReferenceField(to=User, null=True, blank=True, on_delete=models.CASCADE)
     order_date = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     shippingaddress = models.ArrayReferenceField(to=ShippingAddress, null=True, blank=True)
-    status = models.CharField(max_length=20, choices=ORDER_STATUS_CHOICES, default='Pending', null=True, blank=True)
+    status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='Pending', null=True, blank=True)
     offer = models.ArrayReferenceField(to=Offer, null=True, blank=True, on_delete=models.CASCADE)
+    razorpay_payment_id = models.CharField(max_length=100, null=True, blank=True)
+    razorpay_order_id = models.CharField(max_length=100, null=True, blank=True)
+    razorpay_signature = models.CharField(max_length=300, null=True, blank=True)
+    payment_initiated_at = models.DateTimeField(null=True, blank=True)
+    payment_completed_at = models.DateTimeField(null=True, blank=True)
+    payment_duration = models.DurationField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
+        if self.payment_initiated_at and self.payment_completed_at:
+            self.payment_duration = self.payment_completed_at - self.payment_initiated_at
         if not self.invoice_no:
             # Generate invoice number
             self.invoice_no = 'INV' + str(uuid.uuid4().hex)[:6].upper()  # Generating a unique invoice number

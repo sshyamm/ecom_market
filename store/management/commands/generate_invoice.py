@@ -20,6 +20,17 @@ class Command(BaseCommand):
             highest_bidders = item.highest_bidder.all()
 
             for highest_bidder in highest_bidders:
+                # Check if there is already an order for this user and item
+                existing_order = Order.objects.filter(
+                    user=highest_bidder,
+                    orderitem__item=item,
+                    orderitem__item__purpose='auction',
+                ).first()
+
+                if existing_order:
+                    self.stdout.write(self.style.WARNING(f"Order already exists for {highest_bidder.username} for item {item.item_name}"))
+                    continue
+                
                 # Filter ShippingAddress for each highest bidder with primary='yes'
                 shipping_address = ShippingAddress.objects.filter(user=highest_bidder, primary='yes').first()
 
