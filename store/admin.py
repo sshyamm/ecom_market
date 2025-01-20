@@ -45,7 +45,7 @@ class ItemAdmin(admin.ModelAdmin):
         'item_material', 'item_weight', 'rate', 
         'item_status', display_username, 'featured_item', 'view_images', 'is_deleted', 'starting_bid', 'end_time', 
         'incremental_value', 'owner_profit_amount', 'highest_bid', 
-        'display_highest_bidder', 'display_auto_bidder', 'auto_bid_amount', 'manage_bids_link'
+        'display_highest_bidder', 'display_auto_bidder', 'auto_bid_amount', 'created_at', 'manage_bids_link'
     )
     form = ItemForm
 
@@ -337,3 +337,14 @@ class CartItemLogAdmin(admin.ModelAdmin):
                 return item.item_name
         return "None"
     get_cart.short_description = 'Cart Item Name'
+
+@admin.register(FeatureBanner)
+class FeatureBannerAdmin(admin.ModelAdmin):
+    list_display = ('display_item', display_username, 'asked_for', 'get_invoice_no')
+    def display_item(self, obj):
+        return display_item(obj.item.first())
+    def get_invoice_no(self, obj):
+        order = obj.order.first()
+        if order:
+            return order.invoice_no
+        return "None"

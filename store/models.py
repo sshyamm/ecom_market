@@ -49,8 +49,11 @@ class Item(models.Model):
     item_weight = models.FloatField(null=True, blank=True)
     rate = models.FloatField(null=True, blank=True)
     item_status = models.CharField(max_length=50, choices=STATUS_CHOICES, null=True, blank=True)
-    featured_item = models.CharField(max_length=3, choices=FEATURED_CHOICES, default='no')
-    user = models.ArrayReferenceField(to=User, null=True, blank=True, on_delete=models.CASCADE)
+    featured_item = models.CharField(max_length=3, choices=FEATURED_CHOICES, null=True, blank=True)
+    banner_item = models.CharField(max_length=3, choices=FEATURED_CHOICES, null=True, blank=True)
+    featured_fee = models.DecimalField(max_digits=10, decimal_places=2)
+    banner_fee = models.DecimalField(max_digits=10, decimal_places=2)
+    user = models.ArrayReferenceField(to=User, on_delete=models.CASCADE)
     is_deleted = models.CharField(max_length=3, choices=DELETED_CHOICES, default='no')
     starting_bid = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     end_time = models.DateTimeField(null=True, blank=True)
@@ -60,6 +63,7 @@ class Item(models.Model):
     highest_bidder = models.ArrayReferenceField(to=User, null=True, blank=True, on_delete=models.CASCADE, related_name='highest_bids')
     auto_bidder = models.ArrayReferenceField(to=User, null=True, blank=True, on_delete=models.CASCADE, related_name='auto_bidder')
     auto_bid_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     def save(self, *args, **kwargs):
         # Convert Decimal128 fields to Python Decimal before saving
@@ -73,6 +77,10 @@ class Item(models.Model):
             self.owner_profit_amount = Decimal(str(self.owner_profit_amount))
         if self.auto_bid_amount:
             self.auto_bid_amount = Decimal(str(self.auto_bid_amount))
+        if self.featured_fee:
+            self.featured_fee = Decimal(str(self.featured_fee))
+        if self.banner_fee:
+            self.banner_fee = Decimal(str(self.banner_fee))
 
         super().save(*args, **kwargs) 
 
@@ -127,7 +135,7 @@ class Profile(models.Model):
     user = models.ArrayReferenceField(to=User, null=True, blank=True, on_delete=models.CASCADE)
     bio = models.TextField(max_length=500, null=True, blank=True)
     state = models.CharField(max_length=100, null=True, blank=True)
-    country = CountryField()
+    country = CountryField(null=True, blank=True)
     phone_no = models.CharField(max_length=20, null=True, blank=True) 
     website = models.URLField(max_length=200, null=True, blank=True)
 
@@ -282,7 +290,7 @@ class ShippingAddress(models.Model):
         super().clean()
 
     def save(self, *args, **kwargs):
-        if not self.pk and not self.user.first().shippingaddress_set.count() > 0:
+        if not self.pk and self.user.first() and not self.user.first().shippingaddress_set.count() > 0:
             self.primary = 'yes'
         super().save(*args, **kwargs)
 
@@ -307,6 +315,11 @@ class Offer(models.Model):
 
 class Order(models.Model):
     # Define choices for order status
+    ORDER_CHOICES = (
+        ('Item', 'Item'),
+        ('Auction', 'Auction'),
+        ('FeatureBanner', 'Feature/Banner'),
+    )
     PAYMENT_STATUS_CHOICES = (
         ('Pending', 'Pending'),
         ('Paid', 'Paid'),
@@ -324,6 +337,7 @@ class Order(models.Model):
     payment_initiated_at = models.DateTimeField(null=True, blank=True)
     payment_completed_at = models.DateTimeField(null=True, blank=True)
     payment_duration = models.DurationField(null=True, blank=True)
+    order_for = models.CharField(max_length=20, choices=ORDER_CHOICES, default='Item', null=True, blank=True)
 
     def save(self, *args, **kwargs):
         if self.payment_initiated_at and self.payment_completed_at:
@@ -337,12 +351,25 @@ class Order(models.Model):
         return self.invoice_no
     
     def calculate_total_amount(self):
-        total_amount = Decimal(0)
-        order_items = self.orderitem_set.all()  # Assuming the related name for OrderItem is 'orderitem_set'
-        for order_item in order_items:
-            # Convert Decimal128 to Decimal
-            order_item_price_decimal = Decimal(str(order_item.price))
-            total_amount += order_item_price_decimal        
+        total_amount = Decimal(0) 
+
+        if self.order_for == 'FeatureBanner':
+            # Fetch associated FeatureBanner record
+            feature_banner = FeatureBanner.objects.filter(order=self.id).first()
+            if feature_banner:
+                if feature_banner.asked_for == 'featured':
+                    total_amount += Decimal(str(feature_banner.item.first().featured_fee))
+                elif feature_banner.asked_for == 'banner':
+                    total_amount += Decimal(str(feature_banner.item.first().banner_fee))
+                elif feature_banner.asked_for == 'both':
+                    total_amount += Decimal(str(feature_banner.item.first().featured_fee)) + Decimal(str(feature_banner.item.first().banner_fee))
+        else:
+            # Calculate total amount based on OrderItem prices
+            order_items = self.orderitem_set.all() # Assuming the related name for OrderItem is 'orderitem_set'
+            for order_item in order_items:
+                order_item_price_decimal = Decimal(str(order_item.price))
+                total_amount += order_item_price_decimal
+
         return total_amount
         
     def is_user_based_offer_eligible(self, offer):
@@ -432,6 +459,21 @@ class Order(models.Model):
             return self.is_user_based_offer_eligible(offer)
         return False
 
+class FeatureBanner(models.Model):
+    OWNER_CHOICES = [
+        ('featured', 'Featured'),
+        ('banner', 'Banner'),
+        ('both', 'Both')
+    ]
+    item = models.ArrayReferenceField(to=Item, on_delete=models.CASCADE, null=True, blank=True, related_name='item')
+    user = models.ArrayReferenceField(to=User, on_delete=models.CASCADE, null=True, blank=True, related_name='user')
+    asked_for = models.CharField(max_length=255, choices=OWNER_CHOICES, null=True, blank=True)
+    order = models.ArrayReferenceField(to=Order, on_delete=models.CASCADE, null=True, blank=True, related_name='order')
+
+    def __str__(self):
+        item_str = ', '.join([str(c) for c in self.item.all()])
+        return f"{item_str}"
+
 @receiver(post_save, sender=Order)
 @receiver(post_save, sender=Offer)
 def remove_zero_revised_discount_offers(sender, instance, **kwargs):
@@ -495,20 +537,31 @@ class OrderItem(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, editable=False)  # Add price field
 
     def calculate_price(self):
-        if self.item and self.item.first():
-            item_rate = self.item.first().rate
-            item_highest_bid = self.item.first().highest_bid
-            if item_rate is not None:
-                self.price = Decimal(self.quantity) * Decimal(item_rate)
-            elif item_highest_bid is not None:
-                self.price = Decimal(self.quantity) * Decimal(str(item_highest_bid))
-            else:
-                raise ValueError("Item rate is not defined.")
+        if self.order and self.order.first() and self.order.first().order_for == 'FeatureBanner':
+            feature_banner = FeatureBanner.objects.filter(order=self.order.first()).first()
+            if feature_banner:
+                if feature_banner.asked_for == 'featured':
+                    self.price = Decimal(str(feature_banner.item.first().featured_fee))
+                elif feature_banner.asked_for == 'banner':
+                    self.price = Decimal(str(feature_banner.item.first().banner_fee))
+                elif feature_banner.asked_for == 'both':
+                    self.price = Decimal(str(feature_banner.item.first().featured_fee)) + Decimal(str(feature_banner.item.first().banner_fee))
         else:
-            raise ValueError("Item is not selected.")
+            if self.item and self.item.first():
+                item_rate = self.item.first().rate
+                item_highest_bid = self.item.first().highest_bid
+                if item_rate is not None:
+                    self.price = Decimal(self.quantity) * Decimal(item_rate)
+                elif item_highest_bid is not None:
+                    self.price = Decimal(self.quantity) * Decimal(str(item_highest_bid))
+                else:
+                    raise ValueError("Item rate is not defined.")
+            else:
+                raise ValueError("Item is not selected.")
 
     def save(self, *args, **kwargs):
-        self.calculate_price()  # Recalculate the price every time the object is saved
+        if not kwargs.pop('skip_calculate_price', False):
+            self.calculate_price()  # Recalculate the price every time the object is saved
         super().save(*args, **kwargs)
 
     def __str__(self):

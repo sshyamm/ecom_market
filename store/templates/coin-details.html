@@ -44,17 +44,14 @@
                         <p class="mb-4">{{ item.item_desc }}</p>
                         <div class="text-left">
                             <div class="btn-group">
-                                {% if request.user not in item.user.all %}
+                                {% if item.purpose == 'sale' %}
                                 <form method="post" action="{% url 'add_to_cart' item.id %}">
                                     {% csrf_token %}
                                     <button type="submit" class="btn border border-secondary rounded-pill px-4 py-2 mb-4 text-blue"><i
                                             class="fa fa-shopping-bag me-2 text-primary"></i> Add to cart</button>
                                 </form><span>&nbsp;</span>
-                                {% endif %}
-                                {% if request.user in item.user.all %}
-                                    <a href="{% url 'edit_item' item.id %}" class="btn border border-secondary rounded-pill px-4 py-2 mb-4 text-blue">
-                                        <i class="fa fa-edit me-2 text-primary"></i> Edit Collection
-                                    </a>
+                                {% else %}
+                                    This is for auction
                                 {% endif %}
                             </div>
                         </div>

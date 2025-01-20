@@ -17,27 +17,35 @@
                 {% endif %}
                 <h1 class="mb-5 display-3 text-blue">Discover Unique Items & Collectibles</h1>
                 <div class="position-relative mx-auto">
-                    <a href="#"
-                        class="btn btn-primary border-2 border-secondary py-3 px-4 rounded-pill text-white">Browse
-                        Upcoming Auctions</a>
-                    <a href="#"
-                        class="btn btn-secondary border-2 border-secondary py-3 px-4 rounded-pill text-dark ms-3">View
+                    <a href="{% url 'ongoing_auctions' %}"
+                        class="btn btn-primary border-2 border-secondary py-3 px-4 rounded-pill text-white">View
                         Ongoing Auctions</a>
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'my_items' %}"
+                        class="btn btn-secondary border-2 border-secondary py-3 px-4 rounded-pill text-dark ms-3">View
+                        My Items/Requests</a>
+                    {% endif %}
                 </div>
             </div>
-
+            {% if has_banner_items %}
             <div class="col-md-12 col-lg-5">
                 <div id="carouselId" class="carousel slide position-relative" data-bs-ride="carousel">
                     <div class="carousel-inner" role="listbox">
                         {% for item, root_image in items_with_images %}
-                            <div class="carousel-item {% if forloop.first %}active{% endif %} rounded">
-                                {% if root_image %}
-                                    <img src="{{ root_image.image.url }}" class="img-fluid w-100 h-100 bg-secondary rounded" alt="{{ item.item_name }}">
-                                {% else %}
-                                    <img src="{% static 'img/default.jpg' %}" class="img-fluid w-100 h-100 bg-secondary rounded" alt="{{ item.item_name }}">
-                                {% endif %}
-                                <a href="{% url 'item-details' item.id %}" class="btn px-4 py-2 text-white rounded">{{ item.item_name }}</a>
-                            </div>
+                            {% if item.banner_item == 'yes' %}
+                                <div class="carousel-item {% if forloop.first %}active{% endif %} rounded">
+                                    {% if root_image %}
+                                        <img src="{{ root_image.image.url }}" class="img-fluid w-100 h-100 bg-secondary rounded" alt="{{ item.item_name }}">
+                                    {% else %}
+                                        <img src="{% static 'img/default.jpg' %}" class="img-fluid w-100 h-100 bg-secondary rounded" alt="{{ item.item_name }}">
+                                    {% endif %}
+                                    {% if item.purpose == 'sale' %}
+                                    <a href="{% url 'item-details' item.id %}" class="btn px-4 py-2 text-white rounded">{{ item.item_name }}</a>
+                                    {% else %}
+                                    <a href="{% url 'auction-details' item.id %}" class="btn px-4 py-2 text-white rounded">{{ item.item_name }}</a>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
                         {% endfor %}
                     </div>
                     <button class="carousel-control-prev" type="button" data-bs-target="#carouselId" data-bs-slide="prev">
@@ -49,13 +57,15 @@
                         <span class="visually-hidden">Next</span>
                     </button>
                 </div>
-            </div>          
+            </div> 
+            {% endif %}         
         </div>
     </div>
 </div>
 <!-- Hero End -->
 
 <!-- Vesitable Shop Start-->
+{% if has_feature_items %}
 <div class="container-fluid vesitable py-5">
     <div class="container py-5">
         <h1 class="mb-0">Featured/Ongoing Auctions</h1>
@@ -64,7 +74,11 @@
                 {% if item.featured_item == 'yes' %}
                     <div class="rounded position-relative vesitable-item">
                         <div class="vesitable-img">
+                            {% if item.purpose == 'sale' %}
                             <a href="{% url 'item-details' item.id %}">
+                            {% else %}
+                            <a href="{% url 'auction-details' item.id %}">
+                            {% endif %}
                                 {% if root_image %}
                                     <img src="{{ root_image.image.url }}" class="img-fluid w-100 rounded-top" alt="{{ item.item_name }}">
                                 {% else %}
@@ -75,9 +89,13 @@
                         <div class="p-4 rounded-bottom">
                             <h4>{{ item.item_name }}</h4>
                             <p>{{ item.item_desc }}</p>
-                            <div class="d-flex justify-content-between flex-lg-wrap">
+                            <div class="d-flex justify-content-between flex-lg-wrap">           
+                                {% if item.purpose == 'sale' %}
                                 <p class="text-dark fs-5 fw-bold mb-0">{{ item.rate }} /-</p>
-                                {% if request.user not in item.user.all %}
+                                {% else %}
+                                <p class="text-dark fs-5 fw-bold mb-0">Auction</p>
+                                {% endif %}
+                                {% if item.purpose == 'sale' %}
                                 <form method="post" action="{% url 'add_to_cart' item.id %}">
                                     {% csrf_token %}
                                 <button type="submit" class="btn border border-secondary rounded-pill px-3 text-blue">
@@ -85,7 +103,7 @@
                                 </button>
                                 </form>
                                 {% else %}
-                                <a href="{% url 'item-details' item.id %}" class="btn border border-secondary rounded-pill px-3 text-blue">
+                                <a href="{% url 'auction-details' item.id %}" class="btn border border-secondary rounded-pill px-3 text-blue">
                                     <i class="fas fa-eye me-2 text-blue"></i></i> View Details
                                 </a>
                                 {% endif %}
@@ -97,6 +115,7 @@
         </div>
     </div>
 </div>
+{% endif %}
 <!-- Vesitable Shop End -->
 
 <!-- Featurs Section Start -->
@@ -153,6 +172,7 @@
 <!-- Featurs Section End -->
 
 <!-- Fruits Shop Start-->
+{% if has_auction_items %}
 <div class="container-fluid fruite py-5">
     <div class="container py-5">
         <div class="tab-class text-center">
@@ -163,40 +183,44 @@
                 <div class="row g-4">
                     <div class="col-lg-12">
                         <div class="row g-4">
+                            {% with 0 as counter %}
                             {% for item, root_image in items_with_images %}
-                                <div class="col-md-6 col-lg-4 col-xl-3">
-                                    <div class="rounded position-relative fruite-item">
-                                        <div class="fruite-img">
-                                            <a href="{% url 'item-details' item.id %}">
-                                                {% if root_image %}
-                                                    <img src="{{ root_image.image.url }}" class="img-fluid w-100 rounded-top" alt="{{ item.item_name }}">
-                                                {% else %}
-                                                    <img src="{% static 'img/default.jpg' %}" class="img-fluid w-100 rounded-top" alt="{{ item.item_name }}">
-                                                {% endif %}
-                                            </a>
-                                        </div>
-                                        <div class="p-4 border-top-0 rounded-bottom">
-                                            <h4>{{ item.item_name }}</h4>
-                                            <p>{{ item.item_desc }}</p>
-                                            <div class="d-flex justify-content-between flex-lg-wrap">
-                                                <p class="text-dark fs-5 fw-bold mb-0">{{ item.rate }} /-</p>
-                                                {% if request.user not in item.user.all %}
-                                                <form method="post" action="{% url 'add_to_cart' item.id %}">
-                                                    {% csrf_token %}
-                                                <button type="submit" class="btn border border-secondary rounded-pill px-3 text-blue">
-                                                    <i class="fa fa-shopping-bag me-2 text-blue"></i> Add to cart
-                                                </button>
-                                                </form>
-                                                {% else %}
-                                                <a href="{% url 'item-details' item.id %}" class="btn border border-secondary rounded-pill px-3 text-blue">
-                                                    <i class="fas fa-eye me-2 text-blue"></i></i> View Details
-                                                </a>
-                                                {% endif %}
+                                {% if item.purpose == 'auction' %}
+                                    {% if counter < 8 %}
+                                        <div class="col-md-6 col-lg-4 col-xl-3">
+                                            <div class="rounded position-relative fruite-item">
+                                                <div class="fruite-img">
+                                                    <a href="{% url 'auction-details' item.id %}">
+                                                        {% if root_image %}
+                                                            <img src="{{ root_image.image.url }}" class="img-fluid w-100 rounded-top" alt="{{ item.item_name }}">
+                                                        {% else %}
+                                                            <img src="{% static 'img/default.jpg' %}" class="img-fluid w-100 rounded-top" alt="{{ item.item_name }}">
+                                                        {% endif %}
+                                                    </a>
+                                                </div>
+                                                <div class="p-4 border-top-0 rounded-bottom">
+                                                    <h4>{{ item.item_name }}</h4>
+                                                    <p>{{ item.item_desc }}</p>
+                                                    <div class="d-flex justify-content-between flex-lg-wrap">
+                                                        <p class="text-dark fs-5 fw-bold mb-0">Auction</p>
+                                                        <a href="{% url 'auction-details' item.id %}" class="btn border border-secondary rounded-pill px-3 text-blue">
+                                                            <i class="fas fa-eye me-2 text-blue"></i> View Details
+                                                        </a>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
+                                        {% with counter|add:1 as counter %}
+                                        {% endwith %}
+                                    {% endif %}
+                                {% endif %}
                             {% endfor %}
+                            {% endwith %}
+                            {% if counter == 0 %}
+                                <div class="alert alert-warning text-center" role="alert">
+                                    <strong>No latest auction items available at the moment.</strong>
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -204,6 +228,7 @@
         </div>
     </div>
 </div>
+{% endif %}
 <!-- Fruits Shop End-->
 
 
@@ -220,7 +245,7 @@
                             class="fas fa-history text-blue"></i> historical treasures in our curated item auctions.
                         <i class="fas fa-gavel text-blue"></i> Bid now and make history!
                     </p>
-                    <a href="#" class="banner-btn btn border-2 border-white rounded-pill text-dark py-3 px-5">Explore
+                    <a href="{% url 'ongoing_auctions' %}" class="banner-btn btn border-2 border-white rounded-pill text-dark py-3 px-5">Explore
                         more
                         <i class="fas fa-arrow-alt-circle-right ms-2"></i></a>
                 </div>

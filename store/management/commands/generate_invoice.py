@@ -39,6 +39,7 @@ class Command(BaseCommand):
                     order = Order.objects.create(status='Pending')
                     order.user.add(highest_bidder)
                     order.shippingaddress.add(shipping_address)
+                    order.order_for='Auction'
                     order.save()
 
                     # Create OrderItem instance

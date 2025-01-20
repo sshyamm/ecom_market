@@ -12,6 +12,14 @@
 </div>
 <div class="container-fluid py-5">
     <h1 class="text-center mb-4">Manage Items for {{ category.category_name }}</h1>
+    {% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-danger alert-dismissible fade show mt-3 text-center" role="alert">
+            <strong>{{ message }}</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+    {% endif %}
     <div class="row justify-content-center">
         <div class="table-responsive">
             <table id="order-table" class="table text-center align-middle">
@@ -28,16 +36,18 @@
                         <th onclick="sortTable(8)" style="cursor: pointer;">Rate <span class="bi bi-sort-up"></span></th>
                         <th onclick="sortTable(9)" style="cursor: pointer;">Status <span class="bi bi-sort-up"></span></th>
                         <th onclick="sortTable(10)" style="cursor: pointer;">Featured Item <span class="bi bi-sort-up"></span></th>
-                        <th onclick="sortTable(11)" style="cursor: pointer;">Is Deleted <span class="bi bi-sort-up"></span></th>
-                        <th onclick="sortTable(12)" style="cursor: pointer;">User <span class="bi bi-sort-up"></span></th>
-                        <th onclick="sortTable(13)" style="cursor: pointer;">Starting bid <span class="bi bi-sort-up"></span></th>
-                        <th onclick="sortTable(14)" style="cursor: pointer;">End time <span class="bi bi-sort-up"></span></th>
-                        <th onclick="sortTable(15)" style="cursor: pointer;">Owner Profit Amount <span class="bi bi-sort-up"></span></th>
-                        <th onclick="sortTable(16)" style="cursor: pointer;">Incremental Value <span class="bi bi-sort-up"></span></th>
-                        <th onclick="sortTable(17)" style="cursor: pointer;">Highest Bidder <span class="bi bi-sort-up"></span></th>
-                        <th onclick="sortTable(18)" style="cursor: pointer;">Highest bid <span class="bi bi-sort-up"></span></th>
-                        <th onclick="sortTable(19)" style="cursor: pointer;">Auto Bidder <span class="bi bi-sort-up"></span></th>
-                        <th onclick="sortTable(20)" style="cursor: pointer;">Auto bid amount <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(11)" style="cursor: pointer;">Banner Item <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(12)" style="cursor: pointer;">Is Deleted <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(13)" style="cursor: pointer;">User <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(14)" style="cursor: pointer;">Starting bid <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(15)" style="cursor: pointer;">End time <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(16)" style="cursor: pointer;">Owner Profit Amount <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(17)" style="cursor: pointer;">Incremental Value <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(18)" style="cursor: pointer;">Highest Bidder <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(19)" style="cursor: pointer;">Highest bid <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(20)" style="cursor: pointer;">Auto Bidder <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(21)" style="cursor: pointer;">Auto bid amount <span class="bi bi-sort-up"></span></th>
+                        <th onclick="sortTable(22)" style="cursor: pointer;">Created At <span class="bi bi-sort-up"></span></th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -61,6 +71,7 @@
                         <td>{{ item.rate }}</td>
                         <td>{{ item.item_status }}</td>
                         <td>{{ item.featured_item }}</td>
+                        <td>{{ item.banner_item }}</td>
                         <td>{{ item.is_deleted }}</td>
                         <td>{{ item.user.first }}</td>
                         <td>{{ item.starting_bid }}</td>
@@ -71,6 +82,7 @@
                         <td>{{ item.highest_bid }}</td>
                         <td>{{ item.auto_bidder.first }}</td>
                         <td>{{ item.auto_bid_amount }}</td>
+                        <td>{{ item.created_at }}</td>
                         <td>
                             <span class="badge bg-white text-white">
                             <!-- Edit and Delete actions for Item Images -->
@@ -83,9 +95,11 @@
                             <a href="{% url 'dynamic_delete' 'item' item.pk %}?category_id={{ category.pk }}" class="text-danger me-2" title="Delete">
                                 <span class="fas fa-trash fa-lg"></span>
                             </a>
+                            {% if item.purpose == 'auction' %}
                             <a href="{% url 'manage_bids' item.pk %}?category_id={{ category.pk }}" class="text-info me-2" title="Manage Bids">
                                 <span class="fas fa-gavel fa-lg"></span>
                             </a>
+                            {% endif %}
                             </span>
                         </td>
                     </tr>

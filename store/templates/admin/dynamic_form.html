@@ -25,20 +25,26 @@
                 <div class="card mt-4">
                     <div class="card-body">
                         {% if table_name == 'itemimage' %}
-                        <h3 class="card-title""><strong>{{ table_name|title }} Form</strong> <a href="{% url 'manage_item_images' item.pk %}?category_id={{ category.pk }}" class="btn btn-warning">Return</a></h3>
+                        <h3 class="card-title"><strong>{{ table_name|title }} Form</strong> <a href="{% url 'manage_item_images' item.pk %}?category_id={{ category.pk }}" class="btn btn-warning">Return</a></h3>
                         {% elif table_name == 'orderitem' %}
-                        <h3 class="card-title""><strong>{{ table_name|title }} Form</strong> <a href="{% url 'manage_order_items' order.pk %}" class="btn btn-warning">Return</a></h3>
+                        <h3 class="card-title"><strong>{{ table_name|title }} Form</strong> <a href="{% url 'manage_order_items' order.pk %}" class="btn btn-warning">Return</a></h3>
                         {% elif table_name == 'bid' %}
-                        <h3 class="card-title""><strong>{{ table_name|title }} Form</strong> <a href="{% url 'manage_bids' item.pk %}?category_id={{ category.pk }}" class="btn btn-warning">Return</a></h3>
+                        <h3 class="card-title"><strong>{{ table_name|title }} Form</strong> <a href="{% url 'manage_bids' item.pk %}?category_id={{ category.pk }}" class="btn btn-warning">Return</a></h3>
                         {% elif table_name == 'item' %}
-                        <h3 class="card-title""><strong>{{ table_name|title }} Form</strong> <a href="{% url 'manage_category_items' category.pk %}" class="btn btn-warning">Return</a></h3>
+                        <h3 class="card-title"><strong>{{ table_name|title }} Form</strong> <a href="{% url 'manage_category_items' category.pk %}" class="btn btn-warning">Return</a></h3>
                         {% else %}
-                        <h3 class="card-title""><strong>{{ table_name|title }} Form</strong> <a href="{% url 'dynamic_list' table_name %}" class="btn btn-warning">Return</a></h3>
+                        <h3 class="card-title"><strong>{{ table_name|title }} Form</strong> <a href="{% url 'dynamic_list' table_name %}" class="btn btn-warning">Return</a></h3>
                         {% endif %}
-                        <form method="post" enctype="multipart/form-data">
+                        <form id="mainForm" method="post" enctype="multipart/form-data">
                             {% csrf_token %}
-                            {% bootstrap_form form %}                           
+                            {% bootstrap_form form %}
+                            <input type="hidden" id="confirm_action" name="confirm_action" value="">
+                            <!-- Change type to 'button' to prevent default form submission -->
+                            {% if table_name == 'item' %}
+                            <button type="button" class="btn btn-primary" id="submitBtn">Submit</button>
+                            {% else %}
                             <button type="submit" class="btn btn-primary">Submit</button>
+                            {% endif %}
                         </form>
                     </div>
                 </div>
@@ -46,4 +52,45 @@
         </div>
     </div>
 </div>
+<!-- Modal -->
+<div class="modal fade" id="confirmationModal" tabindex="-1" role="dialog" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmationModalLabel">Set Item as Featured/Banner</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Do you want to send a request to the owner to set this item as a featured item or banner item?
+      </div>
+      <div class="modal-footer">
+        <!-- Add onclick event to skip button -->
+        <button type="button" class="btn btn-secondary" onclick="submitForm('')">Skip</button>
+        <button type="button" id="confirmButton" class="btn btn-primary">Yes, send request</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+    // Function to submit the form with confirm_action value
+    function submitForm(confirmAction) {
+        document.getElementById('confirm_action').value = confirmAction;
+        document.getElementById('mainForm').submit();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('submitBtn').addEventListener('click', function(event) {
+            // Prevent default form submission
+            event.preventDefault();
+            // Show modal when Submit button is clicked
+            $('#confirmationModal').modal('show');
+        });
+
+        document.getElementById('confirmButton').addEventListener('click', function() {
+            // Call submitForm with 'send_request' when confirmButton is clicked
+            submitForm('send_request');
+        });
+    });
+</script>
 {% endblock content %}

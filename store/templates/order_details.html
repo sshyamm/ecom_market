@@ -108,11 +108,15 @@
                             <div class="text-muted">
                                 <h5 class="font-size-16 mb-3">Billed To:</h5>
                                 <h5 class="font-size-15 mb-2">{{ order.user.first }}</h5>
+                                {% if order.shippingaddress.first %}
                                 <p class="mb-1">{{ order.shippingaddress.first.address }}</p>
                                 <p class="mb-1">{{ order.shippingaddress.first.city }}, {{ order.shippingaddress.first.state }}</p>
                                 <p class="mb-1">{{ order.shippingaddress.first.country }} - {{ order.shippingaddress.first.postal_code }}</p>
                                 <p class="mb-1">{{ order.user.first.email }}</p>
                                 <p>{{ order.shippingaddress.first.phone_no }}</p>
+                                {% else %}
+                                <h5 class="font-size-15 mb-2">(FEE COLLECTION)</h5>
+                                {% endif %}
                             </div>
                         </div>
                         <!-- end col -->
@@ -145,7 +149,11 @@
                                     <tr class="text-dark">
                                         <th style="width: 70px;">No.</th>
                                         <th>Item</th>
+                                        {% if feature_banner_details %}
+                                        <th>Fee Type</th>
+                                        {% else %}
                                         <th>Price</th>
+                                        {% endif %}
                                         <th>Quantity</th>
                                         <th class="text-end" style="width: 120px;">Total</th>
                                     </tr>
@@ -160,11 +168,22 @@
                                                 <p class="text-muted mb-0">{{ items.item.first.item_desc }}</p>
                                             </div>
                                         </td>
-                                        <td><span>&#8377;</span> 
-                                            {% if items.item.first.rate %}
-                                            {{ items.item.first.rate }}
+                                        <td>
+                                            {% if feature_banner_details %}
+                                                {% if feature_banner_details.asked_for == 'featured' %}
+                                                    <p class="text-muted mb-0">Feature Fee</p>
+                                                {% elif feature_banner_details.asked_for == 'banner' %}
+                                                    <p class="text-muted mb-0">Banner Fee</p>
+                                                {% elif feature_banner_details.asked_for == 'both' %}
+                                                    <p class="text-muted mb-0">Feature + Banner Fees</p>
+                                                {% endif %}
                                             {% else %}
-                                            {{ items.item.first.highest_bid }}
+                                                <span>&#8377;</span> 
+                                                {% if items.item.first.rate %}
+                                                {{ items.item.first.rate }}
+                                                {% else %}
+                                                {{ items.item.first.highest_bid }}
+                                                {% endif %}
                                             {% endif %}
                                         </td>
                                         <td>{{ items.quantity }}</td>
@@ -177,11 +196,14 @@
                                         <td class="text-end text-dark"><span>&#8377;</span> {{ order.calculate_total_amount }}</td>
                                     </tr>
                                     <!-- end tr -->
+                                    {% if feature_banner_details %}
+                                    {% else %}
                                     <tr>
                                         <th scope="row" colspan="4" class="text-end">Shipping Charges</th>
                                         <td class="text-end text-dark"><span>&#8377;</span> {{ shipping_address.get_shipping_charge }}</td>
                                     </tr>
                                     <!-- end tr -->
+                                    {% endif %}
                                     {% for offer in order.offer.all %}
                                     <tr>
                                         {% if offer.offer_type == 'UserBased' %}

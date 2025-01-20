@@ -11,7 +11,7 @@
 </div>
 <div class="container py-5">
     {% if orders %}
-    <div class="row">
+    <div class="row" id="items-container">
         {% for order in orders %}
         <div class="col-md-4 mb-4">
             <div class="card h-100">
@@ -26,10 +26,93 @@
         </div>
         {% endfor %}
     </div>
+    <div class="col-12">
+        <div class="pagination d-flex justify-content-center mt-5" id="pagination">
+            <!-- Pagination buttons will be injected by JavaScript -->
+        </div>
+    </div>
     {% else %}
     <div class="alert alert-danger text-center" role="alert">
         <strong>You have no orders yet</strong>
     </div>
     {% endif %}
 </div>
+<script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+        const items = document.querySelectorAll('#items-container .col-md-4');
+        const itemsPerPage = 12;
+        const paginationContainer = document.getElementById('pagination');
+        let currentPage = 1;
+    
+        function displayItems(page) {
+            const start = (page - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            items.forEach((item, index) => {
+                item.style.display = (index >= start && index < end) ? '' : 'none';
+            });
+        }
+    
+        function setupPagination() {
+            const pageCount = Math.ceil(items.length / itemsPerPage);
+            paginationContainer.innerHTML = '';
+    
+            // Previous button
+            const prevButton = document.createElement('a');
+            prevButton.href = '#';
+            prevButton.innerHTML = '&laquo;';
+            prevButton.className = 'rounded';
+            if (currentPage === 1) {
+                prevButton.classList.add('disabled');
+            }
+            prevButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                if (currentPage > 1) {
+                    currentPage--;
+                    displayItems(currentPage);
+                    setupPagination();
+                }
+            });
+            paginationContainer.appendChild(prevButton);
+    
+            // Page number buttons
+            for (let i = 1; i <= pageCount; i++) {
+                const pageButton = document.createElement('a');
+                pageButton.href = '#';
+                pageButton.textContent = i;
+                pageButton.className = 'rounded';
+                if (i === currentPage) {
+                    pageButton.classList.add('active');
+                }
+                pageButton.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    currentPage = i;
+                    displayItems(currentPage);
+                    setupPagination();
+                });
+                paginationContainer.appendChild(pageButton);
+            }
+    
+            // Next button
+            const nextButton = document.createElement('a');
+            nextButton.href = '#';
+            nextButton.innerHTML = '&raquo;';
+            nextButton.className = 'rounded';
+            if (currentPage === pageCount) {
+                nextButton.classList.add('disabled');
+            }
+            nextButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                if (currentPage < pageCount) {
+                    currentPage++;
+                    displayItems(currentPage);
+                    setupPagination();
+                }
+            });
+            paginationContainer.appendChild(nextButton);
+        }
+    
+        displayItems(currentPage);
+        setupPagination();
+    });
+</script>
 {% endblock content %}

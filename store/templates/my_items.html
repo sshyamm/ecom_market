@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% load static %}
+{% load bootstrap4 %}
+{% block content %}
+<!-- Single Page Header start -->
+<div class="container-fluid page-header py-5">
+    <h1 class="text-center text-white display-6">My Items</h1>
+    <ol class="breadcrumb justify-content-center mb-0">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+        <li class="breadcrumb-item active text-white">My Items</li>
+    </ol>
+</div>
+<!-- Single Page Header End -->
+
+<!-- Fruits Shop Start-->
+<div class="container-fluid fruite py-5">
+    <div class="container py-5">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="sidebar bg-white shadow-lg rounded p-3" style="background: linear-gradient(to top, #f8f9fa, #c8f3c2);">
+                    <nav class="nav flex-column">
+                        <a href="{% url 'my_requests' %}" class="nav-link text-blue mb-2">
+                            <i class="bi bi-cash me-2"></i> Requests/Payment
+                        </a>
+                        <a href="{% url 'my_items' %}" class="nav-link text-blue mb-2">
+                            <i class="bi bi-box-seam me-2"></i> My Items
+                        </a>
+                        <!-- Add more links here as needed -->
+                    </nav>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <div class="row g-4" id="items-container">
+                    {% if items_with_images %}
+                    {% for item, root_image in items_with_images %}
+                        <div class="col-md-4">
+                            <div class="rounded position-relative fruite-item">
+                                <div class="fruite-img">
+                                    {% if item.purpose == 'sale' %}
+                                    <a href="{% url 'item-details' item.id %}">
+                                    {% elif item.purpose == 'auction' %}
+                                        <a href="{% url 'auction-details' item.id %}">
+                                    {% endif %}
+                                        {% if root_image %}
+                                        <img src="{{ root_image.image.url }}" class="img-fluid w-100 rounded-top" alt="{{ item.item_name }}">
+                                        {% else %}
+                                        <img src="{% static 'img/default.jpg' %}" class="img-fluid w-100 rounded-top" alt="{{ item.item_name }}">
+                                        {% endif %}
+                                    </a>
+                                </div>
+                                <div class="p-4 border-top-0 rounded-bottom">
+                                    <h4 class="card-title text-center">{{ item.item_name }}</h4>
+                                    <p class="card-text">{{ item.item_desc }}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <p class="text-dark fs-5 fw-bold mb-0">
+                                            {% if item.purpose == 'sale' %}
+                                            {{ item.rate }} /-
+                                            {% elif item.purpose == 'auction' %}
+                                            Auction
+                                            {% endif %}
+                                        </p>
+                                        {% if item.purpose == 'sale' %}
+                                        <form method="post" action="{% url 'add_to_cart' item.id %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn border border-secondary rounded-pill px-3 text-blue">
+                                                <i class="fa fa-shopping-bag me-2 text-blue"></i> Add to cart
+                                            </button>
+                                        </form>
+                                        {% else %}
+                                            <a href="{% url 'auction-details' item.id %}" class="btn border border-secondary rounded-pill px-3 text-blue">
+                                            <i class="fas fa-eye me-2 text-blue"></i> View Details
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    <div class="col-12">
+                        <div class="pagination d-flex justify-content-center mt-5" id="pagination">
+                            <!-- Pagination buttons will be injected by JavaScript -->
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-danger text-center" role="alert">
+                        <strong>There are no items uploaded by you.</strong>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>                   
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+        const items = document.querySelectorAll('#items-container .col-md-4');
+        const itemsPerPage = 12;
+        const paginationContainer = document.getElementById('pagination');
+        let currentPage = 1;
+    
+        function displayItems(page) {
+            const start = (page - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            items.forEach((item, index) => {
+                item.style.display = (index >= start && index < end) ? '' : 'none';
+            });
+        }
+    
+        function setupPagination() {
+            const pageCount = Math.ceil(items.length / itemsPerPage);
+            paginationContainer.innerHTML = '';
+    
+            // Previous button
+            const prevButton = document.createElement('a');
+            prevButton.href = '#';
+            prevButton.innerHTML = '&laquo;';
+            prevButton.className = 'rounded';
+            if (currentPage === 1) {
+                prevButton.classList.add('disabled');
+            }
+            prevButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                if (currentPage > 1) {
+                    currentPage--;
+                    displayItems(currentPage);
+                    setupPagination();
+                }
+            });
+            paginationContainer.appendChild(prevButton);
+    
+            // Page number buttons
+            for (let i = 1; i <= pageCount; i++) {
+                const pageButton = document.createElement('a');
+                pageButton.href = '#';
+                pageButton.textContent = i;
+                pageButton.className = 'rounded';
+                if (i === currentPage) {
+                    pageButton.classList.add('active');
+                }
+                pageButton.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    currentPage = i;
+                    displayItems(currentPage);
+                    setupPagination();
+                });
+                paginationContainer.appendChild(pageButton);
+            }
+    
+            // Next button
+            const nextButton = document.createElement('a');
+            nextButton.href = '#';
+            nextButton.innerHTML = '&raquo;';
+            nextButton.className = 'rounded';
+            if (currentPage === pageCount) {
+                nextButton.classList.add('disabled');
+            }
+            nextButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                if (currentPage < pageCount) {
+                    currentPage++;
+                    displayItems(currentPage);
+                    setupPagination();
+                }
+            });
+            paginationContainer.appendChild(nextButton);
+        }
+    
+        displayItems(currentPage);
+        setupPagination();
+    });
+</script>
+<!-- Fruits Shop End-->
+{% endblock content %}

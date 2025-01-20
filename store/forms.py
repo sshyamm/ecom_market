@@ -261,9 +261,9 @@ class ItemForm(forms.ModelForm):
     class Meta:
         model = Item
         fields = [
-            'category', 'purpose', 'item_name', 'item_desc', 'item_year', 'item_country', 
-            'item_material', 'item_weight', 'rate', 'item_status', 'user', 'featured_item', 
-            'is_deleted', 'end_time', 'starting_bid', 'owner_profit_amount', 
+            'category', 'purpose', 'item_name', 'item_desc', 'user', 'featured_fee', 'banner_fee',
+            'is_deleted', 'item_year', 'item_country', 
+            'item_material', 'item_weight', 'rate', 'item_status', 'end_time', 'starting_bid', 'owner_profit_amount', 
             'incremental_value'
         ]
         widgets = {
@@ -283,17 +283,23 @@ class ItemForm(forms.ModelForm):
         auction_fields = [
             'end_time', 'starting_bid', 'owner_profit_amount', 'incremental_value'
         ]
-        common_fields = ['category', 'purpose', 'item_name', 'item_desc', 'user', 'featured_item', 'is_deleted']
+        common_fields = ['category', 'purpose', 'item_name', 'item_desc', 'user', 'is_deleted', 'featured_fee', 'banner_fee']
 
         # Ensure fields are only present if they are in the accepted fields for the selected purpose
         if purpose == 'sale':
             for field in auction_fields:
                 if cleaned_data.get(field):
                     self.add_error(field, f"{field.replace('_', ' ').capitalize()} should not be provided for sale purpose.")
+            for field in sale_fields:
+                if not cleaned_data.get(field):
+                    self.add_error(field, f"{field.replace('_', ' ').capitalize()} is required for sale purpose.")
         elif purpose == 'auction':
             for field in sale_fields:
                 if cleaned_data.get(field):
                     self.add_error(field, f"{field.replace('_', ' ').capitalize()} should not be provided for auction purpose.")
+            for field in auction_fields:
+                if not cleaned_data.get(field):
+                    self.add_error(field, f"{field.replace('_', ' ').capitalize()} is required for auction purpose.")
         
         # Validate end_time is after the current datetime
         #if purpose == 'auction' and end_time:
